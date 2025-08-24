@@ -3,13 +3,15 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AlbumService } from '../../services/album.service';
 import { AuthService } from '../../services/auth.service';
-import { Album, Photo, User } from '../../models/interfaces';
+import { InvitationService } from '../../services/invitation.service';
+import { Album, Photo, User, AlbumInvitation } from '../../models/interfaces';
 import { NavbarComponent } from '../shared/navbar-new.component';
+import { AlbumMembersComponent } from './album-members.component';
 
 @Component({
   selector: 'app-album-detail',
   standalone: true,
-  imports: [CommonModule, NavbarComponent],
+  imports: [CommonModule, NavbarComponent, AlbumMembersComponent],
   template: `
     <app-navbar></app-navbar>
     
@@ -110,101 +112,198 @@ import { NavbarComponent } from '../shared/navbar-new.component';
             </div>
           </div>
 
-          <!-- Upload Section -->
-          <div class="bg-white rounded-xl shadow-sm border border-primary-100 p-6 mb-8">
-            <h2 class="text-lg font-semibold text-primary-900 mb-4">Upload Photos</h2>
-            
-            <div class="flex items-center space-x-4">
-              <div class="flex-1">
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  (change)="onFilesSelected($event)"
-                  class="hidden"
-                  #fileInput
-                />
-                
+          <!-- Tabs -->
+          <div class="bg-white rounded-xl shadow-sm border border-primary-100 mb-8">
+            <div class="border-b border-primary-100">
+              <nav class="flex space-x-8 px-6" aria-label="Tabs">
                 <button
-                  (click)="fileInput.click()"
-                  [disabled]="albumService.isLoading()"
-                  class="flex items-center px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors"
+                  (click)="activeTab.set('photos')"
+                  [class]="activeTab() === 'photos' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                  class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors"
                 >
-                  @if (albumService.isLoading()) {
-                    <div class="flex items-center">
-                      <div class="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
-                      Uploading...
+                  Photos ({{ photos().length }})
+                </button>
+                <button
+                  (click)="activeTab.set('members')"
+                  [class]="activeTab() === 'members' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                  class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors"
+                >
+                  Members ({{ getTotalMemberCount() }})
+                </button>
+                @if (isUserAdmin()) {
+                  <button
+                    (click)="activeTab.set('invites')"
+                    [class]="activeTab() === 'invites' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors"
+                  >
+                    Pending Invites ({{ pendingInvites().length }})
+                  </button>
+                }
+              </nav>
+            </div>
+
+            <div class="p-6">
+              <!-- Photos Tab -->
+              @if (activeTab() === 'photos') {
+                <!-- Upload Section -->
+                <div class="mb-8">
+                  <h3 class="text-lg font-semibold text-primary-900 mb-4">Upload Photos</h3>
+                  
+                  <div class="flex items-center space-x-4">
+                    <div class="flex-1">
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        (change)="onFilesSelected($event)"
+                        class="hidden"
+                        #fileInput
+                      />
+                      
+                      <button
+                        (click)="fileInput.click()"
+                        [disabled]="albumService.isLoading()"
+                        class="flex items-center px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors"
+                      >
+                        @if (albumService.isLoading()) {
+                          <div class="flex items-center">
+                            <div class="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
+                            Uploading...
+                          </div>
+                        } @else {
+                          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                          </svg>
+                          Select Photos
+                        }
+                      </button>
+                    </div>
+                    
+                    @if (selectedFiles().length > 0) {
+                      <div class="text-sm text-primary-600">
+                        {{ selectedFiles().length }} file{{ selectedFiles().length !== 1 ? 's' : '' }} selected
+                      </div>
+                      <button
+                        (click)="uploadFiles()"
+                        [disabled]="albumService.isLoading()"
+                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+                      >
+                        Upload
+                      </button>
+                      <button
+                        (click)="clearSelection()"
+                        class="px-4 py-2 text-primary-600 border border-primary-300 rounded-lg hover:bg-primary-50 transition-colors"
+                      >
+                        Clear
+                      </button>
+                    }
+                  </div>
+                </div>
+
+                <!-- Photos Grid -->
+                @if (photos().length === 0) {
+                  <div class="text-center py-12">
+                    <svg class="w-16 h-16 text-primary-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    <h3 class="text-lg font-medium text-primary-900 mb-2">No photos yet</h3>
+                    <p class="text-primary-600 mb-4">Start uploading photos to this album!</p>
+                    <button
+                      (click)="fileInput.click()"
+                      class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                    >
+                      Upload First Photo
+                    </button>
+                  </div>
+                } @else {
+                  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    @for (photo of photos(); track photo.id) {
+                      <div class="group relative aspect-square">
+                        <img
+                          [src]="photo.downloadURL"
+                          [alt]="photo.caption || 'Album photo'"
+                          class="w-full h-full object-cover rounded-lg cursor-pointer hover:shadow-lg transition-shadow"
+                          (click)="openPhotoModal(photo)"
+                          loading="lazy"
+                        />
+                        
+                        <!-- Photo Actions Overlay -->
+                      </div>
+                    }
+                  </div>
+                }
+              }
+
+              <!-- Members Tab -->
+              @if (activeTab() === 'members') {
+                <app-album-members
+                  [albumId]="album()!.id"
+                  [albumName]="album()!.name"
+                  (membersChanged)="onMembersChanged()"
+                />
+              }
+
+              <!-- Pending Invites Tab -->
+              @if (activeTab() === 'invites') {
+                <div class="space-y-6">
+                  <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-primary-900">Pending Invitations</h3>
+                    <p class="text-sm text-primary-600">
+                      {{ pendingInvites().length }} invitation{{ pendingInvites().length !== 1 ? 's' : '' }} sent
+                    </p>
+                  </div>
+
+                  @if (pendingInvites().length === 0) {
+                    <div class="text-center py-12">
+                      <svg class="w-16 h-16 text-primary-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                      </svg>
+                      <h4 class="text-lg font-medium text-primary-900 mb-2">No pending invitations</h4>
+                      <p class="text-primary-600">
+                        All users you've invited have already responded or you haven't sent any invitations yet.
+                      </p>
                     </div>
                   } @else {
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                    </svg>
-                    Select Photos
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      @for (invite of pendingInvites(); track invite.id) {
+                        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                          <div class="flex justify-between items-start mb-3">
+                            <div class="flex-1">
+                              <h4 class="font-medium text-primary-900">{{ invite.inviteeEmail }}</h4>
+                              <p class="text-sm text-primary-600 mt-1">
+                                Invited {{ formatDate(invite.createdAt) }}
+                              </p>
+                              <p class="text-xs text-primary-500 mt-1">
+                                Expires {{ formatDate(invite.expiresAt) }}
+                              </p>
+                            </div>
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                              Pending
+                            </span>
+                          </div>
+                          
+                          <div class="flex space-x-2">
+                            <button
+                              (click)="resendInvitation(invite)"
+                              class="flex-1 px-3 py-1.5 bg-primary-600 text-white text-sm rounded hover:bg-primary-700 transition-colors"
+                            >
+                              Resend
+                            </button>
+                            <button
+                              (click)="cancelInvitation(invite)"
+                              class="flex-1 px-3 py-1.5 bg-gray-300 text-gray-700 text-sm rounded hover:bg-gray-400 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      }
+                    </div>
                   }
-                </button>
-              </div>
-              
-              @if (selectedFiles().length > 0) {
-                <div class="text-sm text-primary-600">
-                  {{ selectedFiles().length }} file{{ selectedFiles().length !== 1 ? 's' : '' }} selected
                 </div>
-                <button
-                  (click)="uploadFiles()"
-                  [disabled]="albumService.isLoading()"
-                  class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
-                >
-                  Upload
-                </button>
-                <button
-                  (click)="clearSelection()"
-                  class="px-4 py-2 text-primary-600 border border-primary-300 rounded-lg hover:bg-primary-50 transition-colors"
-                >
-                  Clear
-                </button>
               }
             </div>
           </div>
-
-          <!-- Photos Grid -->
-          @if (photos().length === 0) {
-            <div class="bg-white rounded-xl shadow-sm border border-primary-100 p-12 text-center">
-              <svg class="w-16 h-16 text-primary-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-              </svg>
-              <h3 class="text-lg font-medium text-primary-900 mb-2">No photos yet</h3>
-              <p class="text-primary-600 mb-4">Start uploading photos to this album!</p>
-              <button
-                (click)="fileInput.click()"
-                class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-              >
-                Upload First Photo
-              </button>
-            </div>
-          } @else {
-            <div class="bg-white rounded-xl shadow-sm border border-primary-100">
-              <div class="px-6 py-4 border-b border-primary-100">
-                <h2 class="text-xl font-semibold text-primary-900">Photos</h2>
-              </div>
-              
-              <div class="p-6">
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                  @for (photo of photos(); track photo.id) {
-                    <div class="group relative aspect-square">
-                      <img
-                        [src]="photo.downloadURL"
-                        [alt]="photo.caption || 'Album photo'"
-                        class="w-full h-full object-cover rounded-lg cursor-pointer hover:shadow-lg transition-shadow"
-                        (click)="openPhotoModal(photo)"
-                        loading="lazy"
-                      />
-                      
-                      <!-- Photo Actions Overlay -->
-                    </div>
-                  }
-                </div>
-              </div>
-            </div>
-          }
         </div>
       } @else {
         <div class="max-w-4xl mx-auto px-4 py-16 text-center">
@@ -365,6 +464,7 @@ export class AlbumDetailComponent implements OnInit {
   private router = inject(Router);
   protected albumService = inject(AlbumService);
   private authService = inject(AuthService);
+  protected invitationService = inject(InvitationService);
 
   album = this.albumService.selectedAlbum;
   photos = this.albumService.albumPhotos;
@@ -373,6 +473,8 @@ export class AlbumDetailComponent implements OnInit {
   selectedPhotoIndex = signal<number>(0);
   showAlbumMenu = signal(false);
   uploaderNames = signal<Map<string, string>>(new Map()); // Cache for uploader names
+  pendingInvites = signal<AlbumInvitation[]>([]);
+  activeTab = signal<'photos' | 'members' | 'invites'>('photos'); // Add active tab signal
 
   constructor() {
     // Update uploader names when photos change
@@ -385,6 +487,81 @@ export class AlbumDetailComponent implements OnInit {
     const albumId = this.route.snapshot.params['id'];
     if (albumId) {
       this.albumService.loadAlbumById(albumId);
+      this.loadPendingInvites(albumId);
+    }
+  }
+
+  onMembersChanged() {
+    // Refresh album data when members change
+    const albumId = this.route.snapshot.params['id'];
+    if (albumId) {
+      this.albumService.loadAlbumById(albumId);
+      // Also reload pending invites in case new ones were sent
+      this.loadPendingInvites(albumId);
+    }
+  }
+
+  private async loadPendingInvites(albumId: string) {
+    try {
+      console.log('🔄 Loading pending invitations for album:', albumId);
+      const invites = await this.invitationService.getAlbumInvitations(albumId);
+      this.pendingInvites.set(invites);
+      console.log('📨 Loaded pending invitations:', invites.length);
+    } catch (error) {
+      console.error('Error loading pending invitations:', error);
+      this.pendingInvites.set([]);
+    }
+  }
+
+  getTotalMemberCount(): number {
+    const album = this.album();
+    if (!album) return 0;
+    // Get unique members from both members and admins arrays
+    const allMembers = new Set([...(album.members || []), ...(album.admins || [])]);
+    return allMembers.size;
+  }
+
+  isUserAdmin(): boolean {
+    const album = this.album();
+    const currentUser = this.authService.currentUser();
+    if (!album || !currentUser) return false;
+    
+    return album.admins.includes(currentUser.uid) || album.createdBy === currentUser.uid;
+  }
+
+  async resendInvitation(invite: AlbumInvitation) {
+    try {
+      const success = await this.invitationService.inviteUserToAlbum(
+        invite.albumId,
+        invite.albumName,
+        invite.inviteeEmail
+      );
+      if (success) {
+        console.log('✅ Invitation resent to:', invite.inviteeEmail);
+        // Refresh pending invites
+        const albumId = this.route.snapshot.params['id'];
+        if (albumId) {
+          this.loadPendingInvites(albumId);
+        }
+      }
+    } catch (error) {
+      console.error('Error resending invitation:', error);
+    }
+  }
+
+  async cancelInvitation(invite: AlbumInvitation) {
+    try {
+      const success = await this.invitationService.cancelInvitation(invite.id);
+      if (success) {
+        console.log('✅ Invitation cancelled for:', invite.inviteeEmail);
+        // Refresh pending invites
+        const albumId = this.route.snapshot.params['id'];
+        if (albumId) {
+          this.loadPendingInvites(albumId);
+        }
+      }
+    } catch (error) {
+      console.error('Error cancelling invitation:', error);
     }
   }
 
@@ -411,13 +588,12 @@ export class AlbumDetailComponent implements OnInit {
     console.log('✅ Uploader names loaded:', names);
   }
 
-  isUserAdmin(): boolean {
-    const album = this.album();
-    return album ? this.albumService.isUserAlbumAdmin(album) : false;
-  }
-
   canDeletePhoto(photo: Photo): boolean {
-    return this.albumService.canUserDeletePhoto(photo);
+    const currentUser = this.authService.currentUser();
+    if (!currentUser) return false;
+    
+    // User can delete photo if they are admin or if they uploaded it
+    return this.isUserAdmin() || photo.uploadedBy === currentUser.uid;
   }
 
   onFilesSelected(event: any) {

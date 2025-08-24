@@ -280,7 +280,10 @@ export class AlbumsComponent implements OnInit {
   }
 
   isUserAdmin(album: Album): boolean {
-    return this.albumService.isUserAlbumAdmin(album);
+    const currentUser = this.authService.currentUser();
+    if (!currentUser) return false;
+    
+    return album.admins.includes(currentUser.uid) || album.createdBy === currentUser.uid;
   }
 
   toggleAlbumMenu(albumId: string) {

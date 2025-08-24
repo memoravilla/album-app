@@ -4,7 +4,8 @@ import { RouterLink, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { AlbumService } from '../../services/album.service';
-import { Album } from '../../models/interfaces';
+import { InvitationService } from '../../services/invitation.service';
+import { Album, AlbumInvitation } from '../../models/interfaces';
 import { NavbarComponent } from '../shared/navbar-new.component';
 
 @Component({
@@ -70,6 +71,48 @@ import { NavbarComponent } from '../shared/navbar-new.component';
             </div>
           </div>
         </div>
+
+        <!-- Pending Invitations -->
+        @if (pendingInvitations().length > 0) {
+          <div class="mb-8">
+            <h2 class="text-xl font-semibold text-primary-900 mb-4">Pending Album Invitations</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              @for (invitation of pendingInvitations(); track invitation.id) {
+                <div class="bg-white rounded-xl shadow-sm border border-amber-200 p-4">
+                  <div class="flex items-start justify-between mb-3">
+                    <div class="flex-1">
+                      <h3 class="font-medium text-primary-900 mb-1">{{ invitation.albumName }}</h3>
+                      <p class="text-sm text-primary-600">
+                        Invited by {{ invitation.inviterName }}
+                      </p>
+                      <p class="text-xs text-primary-500 mt-1">
+                        {{ invitation.createdAt | date:'short' }}
+                      </p>
+                    </div>
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                      Pending
+                    </span>
+                  </div>
+                  
+                  <div class="flex space-x-2">
+                    <button
+                      (click)="acceptInvitation(invitation)"
+                      class="flex-1 px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      Accept
+                    </button>
+                    <button
+                      (click)="declineInvitation(invitation)"
+                      class="flex-1 px-3 py-2 bg-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-400 transition-colors"
+                    >
+                      Decline
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
 
         <!-- Quick Actions -->
         <div class="flex flex-wrap gap-4 mb-8">
@@ -138,7 +181,7 @@ import { NavbarComponent } from '../shared/navbar-new.component';
                       {{ album.name }}
                     </h3>
                     <p class="text-sm text-primary-600">
-                      {{ album.members.length }} member{{ album.members.length !== 1 ? 's' : '' }}
+                      {{ getTotalMemberCount(album) }} member{{ getTotalMemberCount(album) !== 1 ? 's' : '' }}
                     </p>
                     <div class="flex items-center mt-2">
                       @if (isUserAdmin(album)) {
@@ -228,9 +271,11 @@ import { NavbarComponent } from '../shared/navbar-new.component';
 export class DashboardComponent implements OnInit {
   protected authService = inject(AuthService);
   protected albumService = inject(AlbumService);
+  protected invitationService = inject(InvitationService);
   private router = inject(Router);
   
   albums = this.albumService.userAlbums;
+  pendingInvitations = signal<AlbumInvitation[]>([]);
   showCreateModal = signal(false);
   newAlbumName = '';
   newAlbumDescription = '';
@@ -249,11 +294,27 @@ export class DashboardComponent implements OnInit {
     if (currentUser) {
       console.log('Auth ready, loading albums for user:', currentUser.email);
       await this.albumService.loadUserAlbums();
+      await this.loadPendingInvitations();
       
       // Update recent albums after loading
       this.updateRecentAlbums();
     } else {
       console.log('No current user after auth init');
+    }
+  }
+
+  private async loadPendingInvitations() {
+    const currentUser = this.authService.currentUser();
+    if (!currentUser) return;
+
+    try {
+      console.log('Loading pending invitations for user:', currentUser.uid);
+      const invitations = await this.invitationService.getPendingInvitations(currentUser.uid);
+      this.pendingInvitations.set(invitations);
+      console.log('📨 Loaded pending invitations:', invitations.length);
+    } catch (error) {
+      console.error('Error loading pending invitations:', error);
+      this.pendingInvitations.set([]);
     }
   }
 
@@ -282,7 +343,16 @@ export class DashboardComponent implements OnInit {
   }
 
   isUserAdmin(album: Album): boolean {
-    return this.albumService.isUserAlbumAdmin(album);
+    const currentUser = this.authService.currentUser();
+    if (!currentUser) return false;
+    
+    return album.admins.includes(currentUser.uid) || album.createdBy === currentUser.uid;
+  }
+
+  getTotalMemberCount(album: Album): number {
+    // Get unique members from both members and admins arrays
+    const allMembers = new Set([...(album.members || []), ...(album.admins || [])]);
+    return allMembers.size;
   }
 
   openCreateAlbumModal() {
@@ -317,5 +387,34 @@ export class DashboardComponent implements OnInit {
   navigateToAlbum(albumId: string) {
     // Navigate to album view using Angular Router
     this.router.navigate(['/albums', albumId]);
+  }
+
+  // Invitation handling methods
+  async acceptInvitation(invitation: AlbumInvitation) {
+    try {
+      const success = await this.invitationService.respondToInvitation(invitation.id, 'accepted');
+      if (success) {
+        console.log('✅ Invitation accepted');
+        // Reload data to reflect changes
+        await this.loadPendingInvitations();
+        await this.albumService.loadUserAlbums();
+        this.updateRecentAlbums();
+      }
+    } catch (error) {
+      console.error('Error accepting invitation:', error);
+    }
+  }
+
+  async declineInvitation(invitation: AlbumInvitation) {
+    try {
+      const success = await this.invitationService.respondToInvitation(invitation.id, 'declined');
+      if (success) {
+        console.log('✅ Invitation declined');
+        // Reload pending invitations
+        await this.loadPendingInvitations();
+      }
+    } catch (error) {
+      console.error('Error declining invitation:', error);
+    }
   }
 }

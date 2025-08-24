@@ -276,36 +276,176 @@ export class AlbumService {
     }
   }
 
-  async addMemberToAlbum(albumId: string, userEmail: string): Promise<boolean> {
+  // Member Management Methods
+  async getAlbumMembers(albumId: string): Promise<AlbumMember[]> {
     try {
-      // In a real app, you'd look up the user by email first
-      // For now, this is a placeholder
-      const albumRef = doc(this.firestore, `albums/${albumId}`);
-      await updateDoc(albumRef, {
-        members: arrayUnion(userEmail) // In real app, would be UID
-      });
+      const albumRef = doc(this.firestore, 'albums', albumId);
+      const albumDoc = await getDoc(albumRef);
       
+      if (!albumDoc.exists()) {
+        console.error('❌ Album not found');
+        return [];
+      }
+      
+      const albumData = albumDoc.data() as Album;
+      const allMemberIds = [...(albumData.members || []), ...(albumData.admins || [])];
+      const uniqueMemberIds = [...new Set(allMemberIds)];
+      
+      if (uniqueMemberIds.length === 0) {
+        return [];
+      }
+
+      // Fetch user details for all members
+      const usersRef = collection(this.firestore, 'users');
+      const members: AlbumMember[] = [];
+
+      for (const uid of uniqueMemberIds) {
+        try {
+          const userDoc = await getDoc(doc(usersRef, uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            members.push({
+              uid,
+              email: userData['email'],
+              displayName: userData['displayName'],
+              photoURL: userData['photoURL'],
+              role: albumData.admins.includes(uid) ? 'admin' : 'member',
+              joinedAt: userData['createdAt']?.toDate() || new Date()
+            });
+          }
+        } catch (error) {
+          console.warn('⚠️ Error fetching user data for UID:', uid, error);
+        }
+      }
+
+      console.log('✅ Fetched album members:', members.length);
+      return members;
+    } catch (error) {
+      console.error('❌ Error fetching album members:', error);
+      return [];
+    }
+  }
+
+  async addMemberToAlbum(albumId: string, userUid: string): Promise<boolean> {
+    try {
+      const currentUser = this.authService.currentUser();
+      if (!currentUser) {
+        console.error('❌ No authenticated user');
+        return false;
+      }
+
+      // Check if current user is admin of the album
+      const isAdmin = await this.isUserAlbumAdmin(albumId, currentUser.uid);
+      if (!isAdmin) {
+        console.error('❌ User is not an admin of this album');
+        return false;
+      }
+
+      const albumRef = doc(this.firestore, 'albums', albumId);
+      await updateDoc(albumRef, {
+        members: arrayUnion(userUid)
+      });
+
+      console.log('✅ Member added to album');
       return true;
     } catch (error) {
-      console.error('Add member error:', error);
+      console.error('❌ Error adding member to album:', error);
       return false;
     }
   }
 
-  isUserAlbumAdmin(album: Album): boolean {
-    const currentUser = this.authService.currentUser();
-    return currentUser ? album.admins.includes(currentUser.uid) : false;
+  async removeMemberFromAlbum(albumId: string, userUid: string): Promise<boolean> {
+    try {
+      const currentUser = this.authService.currentUser();
+      if (!currentUser) {
+        console.error('❌ No authenticated user');
+        return false;
+      }
+
+      // Check if current user is admin of the album
+      const isAdmin = await this.isUserAlbumAdmin(albumId, currentUser.uid);
+      if (!isAdmin) {
+        console.error('❌ User is not an admin of this album');
+        return false;
+      }
+
+      const albumRef = doc(this.firestore, 'albums', albumId);
+      await updateDoc(albumRef, {
+        members: arrayRemove(userUid),
+        admins: arrayRemove(userUid) // Also remove from admins if they were one
+      });
+
+      console.log('✅ Member removed from album');
+      return true;
+    } catch (error) {
+      console.error('❌ Error removing member from album:', error);
+      return false;
+    }
   }
 
-  canUserDeletePhoto(photo: Photo): boolean {
-    const currentUser = this.authService.currentUser();
-    if (!currentUser) return false;
-    
-    const selectedAlbum = this.selectedAlbum();
-    if (!selectedAlbum) return false;
-    
-    // User can delete if they're admin or the uploader
-    return this.isUserAlbumAdmin(selectedAlbum) || photo.uploadedBy === currentUser.uid;
+  async promoteToAdmin(albumId: string, userUid: string): Promise<boolean> {
+    try {
+      const currentUser = this.authService.currentUser();
+      if (!currentUser) {
+        console.error('❌ No authenticated user');
+        return false;
+      }
+
+      // Check if current user is admin of the album
+      const isAdmin = await this.isUserAlbumAdmin(albumId, currentUser.uid);
+      if (!isAdmin) {
+        console.error('❌ User is not an admin of this album');
+        return false;
+      }
+
+      const albumRef = doc(this.firestore, 'albums', albumId);
+      await updateDoc(albumRef, {
+        admins: arrayUnion(userUid),
+        members: arrayRemove(userUid) // Remove from members since they're now admin
+      });
+
+      console.log('✅ User promoted to admin');
+      return true;
+    } catch (error) {
+      console.error('❌ Error promoting user to admin:', error);
+      return false;
+    }
+  }
+
+  async isUserAlbumAdmin(albumId: string, userUid: string): Promise<boolean> {
+    try {
+      const albumRef = doc(this.firestore, 'albums', albumId);
+      const albumDoc = await getDoc(albumRef);
+      
+      if (!albumDoc.exists()) {
+        return false;
+      }
+      
+      const albumData = albumDoc.data() as Album;
+      return albumData.admins.includes(userUid) || albumData.createdBy === userUid;
+    } catch (error) {
+      console.error('❌ Error checking admin status:', error);
+      return false;
+    }
+  }
+
+  async isUserAlbumMember(albumId: string, userUid: string): Promise<boolean> {
+    try {
+      const albumRef = doc(this.firestore, 'albums', albumId);
+      const albumDoc = await getDoc(albumRef);
+      
+      if (!albumDoc.exists()) {
+        return false;
+      }
+      
+      const albumData = albumDoc.data() as Album;
+      return albumData.members.includes(userUid) || 
+             albumData.admins.includes(userUid) || 
+             albumData.createdBy === userUid;
+    } catch (error) {
+      console.error('❌ Error checking member status:', error);
+      return false;
+    }
   }
 
   async downloadAllPhotos(albumId: string): Promise<boolean> {
