@@ -23,6 +23,13 @@ service cloud.firestore {
          request.auth.uid == resource.data.createdBy);
       allow create: if request.auth != null && 
         request.auth.uid == request.resource.data.createdBy;
+      // Allow users to add themselves to members array when accepting invitations
+      allow update: if request.auth != null && 
+        (request.auth.uid in resource.data.admins || 
+         request.auth.uid == resource.data.createdBy ||
+         (request.resource.data.members != null && 
+          request.auth.uid in request.resource.data.members && 
+          request.auth.uid not in resource.data.members));
     }
     
     // Photos - users can read photos from albums they are members of
@@ -38,9 +45,13 @@ service cloud.firestore {
         (request.auth.uid == resource.data.inviteeUid || 
          request.auth.uid == resource.data.inviterUid);
       allow write: if request.auth != null && 
-        request.auth.uid == resource.data.inviterUid;
+        (request.auth.uid == resource.data.inviterUid ||
+         request.auth.uid == resource.data.inviteeUid);
       allow create: if request.auth != null && 
         request.auth.uid == request.resource.data.inviterUid;
+      allow update: if request.auth != null && 
+        (request.auth.uid == resource.data.inviterUid ||
+         request.auth.uid == resource.data.inviteeUid);
       allow list: if request.auth != null && 
         (request.auth.uid == resource.data.inviteeUid || 
          request.auth.uid == resource.data.inviterUid);

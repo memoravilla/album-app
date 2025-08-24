@@ -156,6 +156,8 @@ export class InvitationService {
         return false;
       }
 
+      console.log(`🔄 Responding to invitation ${invitationId} with: ${response}`);
+
       const invitationRef = doc(this.firestore, 'albumInvitations', invitationId);
       const invitationDoc = await getDoc(invitationRef);
 
@@ -165,54 +167,99 @@ export class InvitationService {
       }
 
       const invitation = invitationDoc.data() as AlbumInvitation;
+      console.log('📄 Invitation data:', invitation);
 
       // Verify the current user is the invitee
       if (invitation.inviteeUid !== currentUser.uid) {
         console.error('❌ User not authorized to respond to this invitation');
+        console.error('❌ Expected UID:', invitation.inviteeUid, 'Actual UID:', currentUser.uid);
         return false;
       }
 
-      // Update invitation status
-      await updateDoc(invitationRef, {
-        status: response,
-        respondedAt: new Date()
-      });
+      // Update invitation status first
+      console.log('📝 Updating invitation status...');
+      try {
+        await updateDoc(invitationRef, {
+          status: response,
+          respondedAt: new Date()
+        });
+        console.log('✅ Invitation status updated successfully');
+      } catch (invitationUpdateError: any) {
+        console.error('❌ Failed to update invitation status:', invitationUpdateError);
+        console.error('❌ Error code:', invitationUpdateError.code);
+        console.error('❌ Error message:', invitationUpdateError.message);
+        return false;
+      }
 
       if (response === 'accepted') {
+        console.log('🔄 Processing invitation acceptance...');
+        
         // Add user to album members
         const albumRef = doc(this.firestore, 'albums', invitation.albumId);
-        const albumDoc = await getDoc(albumRef);
         
-        if (albumDoc.exists()) {
-          const albumData = albumDoc.data();
-          const currentMembers = albumData['members'] || [];
+        try {
+          console.log('📄 Getting album document...');
+          const albumDoc = await getDoc(albumRef);
           
-          if (!currentMembers.includes(currentUser.uid)) {
-            await updateDoc(albumRef, {
-              members: [...currentMembers, currentUser.uid]
-            });
+          if (albumDoc.exists()) {
+            const albumData = albumDoc.data();
+            const currentMembers = albumData['members'] || [];
+            console.log('👥 Current album members:', currentMembers);
+            
+            if (!currentMembers.includes(currentUser.uid)) {
+              console.log('➕ Adding user to album members...');
+              const updatedMembers = [...currentMembers, currentUser.uid];
+              console.log('👥 Updated members list:', updatedMembers);
+              
+              await updateDoc(albumRef, {
+                members: updatedMembers
+              });
+              console.log('✅ User added to album members successfully');
+            } else {
+              console.log('ℹ️ User already in album members');
+            }
+          } else {
+            console.error('❌ Album not found:', invitation.albumId);
+            return false;
           }
+        } catch (albumUpdateError: any) {
+          console.error('❌ Failed to add user to album:', albumUpdateError);
+          console.error('❌ Error code:', albumUpdateError.code);
+          console.error('❌ Error message:', albumUpdateError.message);
+          console.error('❌ Album ID:', invitation.albumId);
+          console.error('❌ User UID:', currentUser.uid);
+          return false;
         }
 
         // Notify the inviter
-        await this.notificationService.createNotification({
-          userId: invitation.inviterUid,
-          type: 'album_member_added',
-          title: 'Invitation Accepted',
-          message: `${currentUser.displayName} accepted your invitation to join "${invitation.albumName}"`,
-          data: {
-            albumId: invitation.albumId,
-            albumName: invitation.albumName,
-            newMemberName: currentUser.displayName
-          },
-          read: false
-        });
+        console.log('🔔 Creating notification for inviter...');
+        try {
+          await this.notificationService.createNotification({
+            userId: invitation.inviterUid,
+            type: 'album_member_added',
+            title: 'Invitation Accepted',
+            message: `${currentUser.displayName || currentUser.email} accepted your invitation to join "${invitation.albumName}"`,
+            data: {
+              albumId: invitation.albumId,
+              albumName: invitation.albumName,
+              newMemberName: currentUser.displayName || currentUser.email || 'Unknown'
+            },
+            read: false
+          });
+          console.log('✅ Notification created successfully');
+        } catch (notificationError: any) {
+          console.error('⚠️ Failed to create notification:', notificationError);
+          // Don't fail the entire process if notification fails
+        }
       }
 
       console.log(`✅ Invitation ${response} successfully`);
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error(`❌ Error responding to invitation:`, error);
+      console.error('❌ Error code:', error.code);
+      console.error('❌ Error message:', error.message);
+      console.error('❌ Stack trace:', error.stack);
       return false;
     }
   }
