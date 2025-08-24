@@ -196,16 +196,109 @@ interface Founder {
         
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8" @staggerIn>
           @for (feature of features; track feature.title; let i = $index) {
-            <div class="bg-white p-8 rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 hover:scale-105 animate-fade-in-up group cursor-pointer hover:rotate-1 hover:bg-gradient-to-br hover:from-white hover:to-gray-50"
+            <div class="bg-white p-8 rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 hover:scale-105 animate-fade-in-up group cursor-pointer hover:rotate-1 hover:bg-gradient-to-br hover:from-white hover:to-gray-50 relative overflow-hidden"
                  [style.animation-delay]="(i * 100) + 'ms'" @flipIn>
-              <div class="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-primary-200 transition-all duration-300 animate-bounce-on-hover group-hover:rotate-12 group-hover:scale-110">
-                <svg class="w-6 h-6 text-primary-600 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" [innerHTML]="feature.icon">
-                </svg>
+              <!-- Icon Container with Enhanced Effects -->
+              <div class="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-primary-200 transition-all duration-300 feature-icon-enhanced icon-container relative z-10 group-hover:rotate-12 group-hover:scale-110 animate-icon-glow"
+                   [ngClass]="'feature-icon-' + i">
+                
+                @if (i === 0) {
+                  <!-- Secure Cloud Storage Icon -->
+                  <svg class="w-8 h-8 transition-transform duration-300 animate-icon-pulse group-hover:animate-gradient-shift group-hover:scale-110" 
+                       fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M12 2l1.09 6.26L20 9l-6.91.74L12 16l-1.09-6.26L4 9l6.91-.74L12 2z" opacity="0.3"/>
+                    <path stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"/>
+                    <path stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" d="m9 12 2 2 4-4"/>
+                    <circle cx="6" cy="18" r="1" fill="currentColor" opacity="0.4"/>
+                    <circle cx="20" cy="6" r="1" fill="currentColor" opacity="0.3"/>
+                  </svg>
+                } @else if (i === 1) {
+                  <!-- Easy Sharing Icon -->
+                  <svg class="w-8 h-8 transition-transform duration-300 animate-icon-pulse group-hover:animate-gradient-shift group-hover:scale-110" 
+                       fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="9" cy="12" r="1" fill="currentColor"/>
+                    <circle cx="15" cy="6" r="1" fill="currentColor"/>
+                    <circle cx="15" cy="18" r="1" fill="currentColor"/>
+                    <path stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" d="m8.5 12.5 7-7m-7 7 7 7"/>
+                    <circle cx="9" cy="12" r="3" stroke="currentColor" stroke-width="2" fill="none"/>
+                    <circle cx="15" cy="6" r="3" stroke="currentColor" stroke-width="2" fill="none"/>
+                    <circle cx="15" cy="18" r="3" stroke="currentColor" stroke-width="2" fill="none"/>
+                    <path stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round" d="M2 2l2 2m16-2l2 2m-2 16l2 2m-20 0l2-2" opacity="0.3"/>
+                  </svg>
+                } @else if (i === 2) {
+                  <!-- Smart Organization Icon -->
+                  <svg class="w-8 h-8 transition-transform duration-300 animate-icon-pulse group-hover:animate-gradient-shift group-hover:scale-110" 
+                       fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                    <rect x="3" y="4" width="18" height="4" rx="2" fill="currentColor" opacity="0.2"/>
+                    <path stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" d="m7 12 3 3 7-7"/>
+                    <circle cx="8" cy="6" r="1" fill="currentColor" opacity="0.8"/>
+                    <circle cx="12" cy="6" r="1" fill="currentColor" opacity="0.8"/>
+                    <circle cx="16" cy="6" r="1" fill="currentColor" opacity="0.8"/>
+                    <rect x="7" y="15" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.3"/>
+                    <rect x="12" y="15" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.2"/>
+                    <rect x="17" y="15" width="2" height="2" rx="0.5" fill="currentColor" opacity="0.15"/>
+                  </svg>
+                } @else if (i === 3) {
+                  <!-- Beautiful Albums Icon -->
+                  <svg class="w-8 h-8 transition-transform duration-300 animate-icon-pulse group-hover:animate-gradient-shift group-hover:scale-110" 
+                       fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                    <rect x="3" y="3" width="18" height="18" rx="2" fill="currentColor" opacity="0.05"/>
+                    <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" opacity="0.6"/>
+                    <path stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" d="m21 15-5-5L5 21l5-5"/>
+                    <rect x="13" y="7" width="6" height="4" rx="1" fill="currentColor" opacity="0.3"/>
+                    <rect x="13" y="13" width="6" height="2" rx="1" fill="currentColor" opacity="0.2"/>
+                    <rect x="13" y="16" width="4" height="2" rx="1" fill="currentColor" opacity="0.15"/>
+                    <path stroke="currentColor" stroke-width="0.5" fill="none" d="M1 1l2 2m17-2l2 2m-2 17l2 2m-19 0l2-2" opacity="0.2"/>
+                  </svg>
+                } @else if (i === 4) {
+                  <!-- Collaborative Memories Icon -->
+                  <svg class="w-8 h-8 transition-transform duration-300 animate-icon-pulse group-hover:animate-gradient-shift group-hover:scale-110" 
+                       fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2" fill="none"/>
+                    <circle cx="9" cy="7" r="1" fill="currentColor" opacity="0.6"/>
+                    <path stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" d="m22 21-3-3 3-3"/>
+                    <circle cx="20" cy="8" r="3" stroke="currentColor" stroke-width="2" fill="none"/>
+                    <circle cx="20" cy="8" r="0.8" fill="currentColor" opacity="0.6"/>
+                    <path stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round" d="M12 12h3l2 2-2 2h-3" opacity="0.4"/>
+                    <circle cx="5" cy="3" r="1" fill="currentColor" opacity="0.3"/>
+                    <circle cx="19" cy="2" r="1" fill="currentColor" opacity="0.4"/>
+                    <circle cx="2" cy="20" r="1" fill="currentColor" opacity="0.25"/>
+                  </svg>
+                } @else if (i === 5) {
+                  <!-- Cross-Platform Access Icon -->
+                  <svg class="w-8 h-8 transition-transform duration-300 animate-icon-pulse group-hover:animate-gradient-shift group-hover:scale-110" 
+                       fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <rect x="17" y="4" width="6" height="12" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <rect x="17" y="4" width="6" height="12" rx="1" fill="currentColor" opacity="0.05"/>
+                    <circle cx="20" cy="14.5" r="0.5" fill="currentColor"/>
+                    <rect x="8" y="6" width="8" height="12" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <rect x="8" y="6" width="8" height="12" rx="1" fill="currentColor" opacity="0.08"/>
+                    <circle cx="12" cy="16.5" r="0.5" fill="currentColor"/>
+                    <rect x="1" y="8" width="12" height="8" rx="1" stroke="currentColor" stroke-width="2" fill="none"/>
+                    <rect x="1" y="8" width="12" height="8" rx="1" fill="currentColor" opacity="0.1"/>
+                    <path stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" d="M5 16v2h4v-2"/>
+                    <path stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round" d="M14 10l2-2 2 2m-2-2v4" opacity="0.5"/>
+                    <path stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round" d="M18 14l-2 2-2-2m2 2v-4" opacity="0.5"/>
+                    <circle cx="7" cy="4" r="1" fill="currentColor" opacity="0.4"/>
+                    <circle cx="15" cy="20" r="1" fill="currentColor" opacity="0.3"/>
+                    <circle cx="21" cy="18" r="1" fill="currentColor" opacity="0.25"/>
+                  </svg>
+                }
+                
+                <!-- Sparkle effects -->
+                <div class="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-sparkle" style="animation-delay: 0.2s;"></div>
+                <div class="absolute -bottom-1 -left-1 w-2 h-2 bg-pink-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-sparkle" style="animation-delay: 0.8s;"></div>
               </div>
               <h3 class="text-xl font-semibold text-gray-900 mb-3 group-hover:text-primary-600 transition-colors duration-300 group-hover:animate-pulse">{{ feature.title }}</h3>
               <p class="text-gray-600 group-hover:text-gray-700 transition-colors duration-300">{{ feature.description }}</p>
-              <!-- Decorative elements -->
+              <!-- Enhanced decorative elements -->
               <div class="absolute top-2 right-2 w-2 h-2 bg-primary-200 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-ping"></div>
+              <div class="absolute bottom-4 left-4 w-1 h-1 bg-green-300 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-pulse" style="animation-delay: 0.5s;"></div>
+              <!-- Gradient overlay on hover -->
+              <div class="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-primary-50 opacity-0 group-hover:opacity-20 transition-opacity duration-300 rounded-xl pointer-events-none"></div>
             </div>
           }
         </div>
@@ -363,6 +456,8 @@ interface Founder {
                   [class.text-gray-900]="!plan.featured"
                   [class.hover:bg-gray-200]="!plan.featured"
                   [class.hover:text-primary-600]="!plan.featured"
+                  [disabled]="plan.buttonText === 'Coming Soon'"
+                  routerLink="/auth/register"
                 >
                   {{ plan.buttonText }}
                 </button>
@@ -525,9 +620,9 @@ interface Founder {
             <h4 class="text-lg font-semibold mb-4">Support</h4>
             <ul class="space-y-2">
               <li><a href="#contact" class="text-gray-300 hover:text-white transition-colors">Contact Us</a></li>
-              <li><a href="#" class="text-gray-300 hover:text-white transition-colors">Help Center</a></li>
-              <li><a href="#" class="text-gray-300 hover:text-white transition-colors">Privacy Policy</a></li>
-              <li><a href="#" class="text-gray-300 hover:text-white transition-colors">Terms of Service</a></li>
+              <li><a routerLink="/help" class="text-gray-300 hover:text-white transition-colors">Help Center</a></li>
+              <li><a routerLink="/privacy" class="text-gray-300 hover:text-white transition-colors">Privacy Policy</a></li>
+              <li><a routerLink="/terms" class="text-gray-300 hover:text-white transition-colors">Terms of Service</a></li>
             </ul>
           </div>
         </div>
@@ -616,6 +711,28 @@ interface Founder {
       50% { transform: translateY(-3px); }
     }
     
+    @keyframes icon-glow {
+      0%, 100% { filter: drop-shadow(0 0 0 transparent); }
+      50% { filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.4)); }
+    }
+    
+    @keyframes gradient-shift {
+      0%, 100% { transform: translateX(0) scale(1); }
+      25% { transform: translateX(-2px) scale(1.02); }
+      50% { transform: translateX(0) scale(1.05); }
+      75% { transform: translateX(2px) scale(1.02); }
+    }
+    
+    @keyframes icon-pulse {
+      0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+      50% { transform: scale(1.1) rotate(5deg); opacity: 0.9; }
+    }
+    
+    @keyframes sparkle {
+      0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+      50% { opacity: 1; transform: scale(1) rotate(180deg); }
+    }
+    
     /* CSS Animation Classes */
     .animate-float {
       animation: float 6s ease-in-out infinite;
@@ -694,6 +811,124 @@ interface Founder {
       animation: bounce-on-hover 0.6s ease-in-out infinite;
     }
     
+    .animate-icon-glow {
+      animation: icon-glow 2.5s ease-in-out infinite;
+    }
+    
+    .animate-gradient-shift {
+      animation: gradient-shift 1s ease-in-out;
+    }
+    
+    .animate-icon-pulse {
+      animation: icon-pulse 1.5s ease-in-out infinite;
+    }
+    
+    .animate-sparkle {
+      animation: sparkle 2s ease-in-out infinite;
+    }
+    
+    /* Icon container styles */
+    .icon-container {
+      position: relative;
+      overflow: visible;
+    }
+    
+    .icon-container svg {
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+      transition: all 0.3s ease;
+    }
+    
+    .icon-container:hover svg {
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+      transform: scale(1.05);
+    }
+    
+    /* Feature card icon enhancements */
+    .feature-icon-enhanced {
+      position: relative;
+    }
+    
+    .feature-icon-enhanced::before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      background: linear-gradient(45deg, #667eea, #764ba2, #667eea);
+      background-size: 200% 200%;
+      border-radius: inherit;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: -1;
+      animation: text-gradient 3s ease infinite;
+    }
+    
+    .feature-icon-enhanced:hover::before {
+      opacity: 0.2;
+    }
+    
+    /* Individual feature icon colors */
+    .feature-icon-0 { /* Secure Cloud Storage - Blue */
+      background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    }
+    .feature-icon-0 svg {
+      color: #3b82f6;
+    }
+    .feature-icon-0:hover {
+      background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
+    }
+    
+    .feature-icon-1 { /* Easy Sharing - Green */
+      background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+    }
+    .feature-icon-1 svg {
+      color: #10b981;
+    }
+    .feature-icon-1:hover {
+      background: linear-gradient(135deg, #bbf7d0 0%, #86efac 100%);
+    }
+    
+    .feature-icon-2 { /* Smart Organization - Purple */
+      background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+    }
+    .feature-icon-2 svg {
+      color: #8b5cf6;
+    }
+    .feature-icon-2:hover {
+      background: linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%);
+    }
+    
+    .feature-icon-3 { /* Beautiful Albums - Orange */
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    }
+    .feature-icon-3 svg {
+      color: #f59e0b;
+    }
+    .feature-icon-3:hover {
+      background: linear-gradient(135deg, #fde68a 0%, #fcd34d 100%);
+    }
+    
+    .feature-icon-4 { /* Collaborative Memories - Red */
+      background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    }
+    .feature-icon-4 svg {
+      color: #ef4444;
+    }
+    .feature-icon-4:hover {
+      background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+    }
+    
+    .feature-icon-5 { /* Cross-Platform Access - Cyan */
+      background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%);
+    }
+    .feature-icon-5 svg {
+      color: #06b6d4;
+    }
+    .feature-icon-5:hover {
+      background: linear-gradient(135deg, #b2ebf2 0%, #80deea 100%);
+    }
+    
     /* Hover effects */
     .hover\\:animate-wiggle:hover {
       animation: wiggle 0.5s ease-in-out;
@@ -751,32 +986,80 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     {
       title: 'Secure Cloud Storage',
       description: 'Your memories are safely stored in the cloud with enterprise-grade security and automatic backups.',
-      icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>'
+      icon: `<path fill="currentColor" d="M12 2l1.09 6.26L20 9l-6.91.74L12 16l-1.09-6.26L4 9l6.91-.74L12 2z" opacity="0.3"/>
+      <path stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"/>
+      <path stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" d="m9 12 2 2 4-4"/>
+      <circle cx="6" cy="18" r="1" fill="currentColor" opacity="0.4"/>
+      <circle cx="20" cy="6" r="1" fill="currentColor" opacity="0.3"/>`
     },
     {
       title: 'Easy Sharing',
       description: 'Share albums with family and friends through secure invitations. Control who can view and contribute.',
-      icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path>'
+      icon: `<circle cx="9" cy="12" r="1" fill="currentColor"/>
+      <circle cx="15" cy="6" r="1" fill="currentColor"/>
+      <circle cx="15" cy="18" r="1" fill="currentColor"/>
+      <path stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" d="m8.5 12.5 7-7m-7 7 7 7"/>
+      <circle cx="9" cy="12" r="3" stroke="currentColor" stroke-width="2" fill="none"/>
+      <circle cx="15" cy="6" r="3" stroke="currentColor" stroke-width="2" fill="none"/>
+      <circle cx="15" cy="18" r="3" stroke="currentColor" stroke-width="2" fill="none"/>
+      <path stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round" d="M2 2l2 2m16-2l2 2m-2 16l2 2m-20 0l2-2" opacity="0.3"/>`
     },
     {
       title: 'Smart Organization',
       description: 'Automatically organize photos by date, event, or custom tags. Find any memory in seconds.',
-      icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14-7H5a2 2 0 00-2 2v12a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2z"></path>'
+      icon: `<rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+      <rect x="3" y="4" width="18" height="4" rx="2" fill="currentColor" opacity="0.2"/>
+      <path stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" d="m7 12 3 3 7-7"/>
+      <circle cx="8" cy="6" r="1" fill="currentColor" opacity="0.8"/>
+      <circle cx="12" cy="6" r="1" fill="currentColor" opacity="0.8"/>
+      <circle cx="16" cy="6" r="1" fill="currentColor" opacity="0.8"/>
+      <rect x="7" y="15" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.3"/>
+      <rect x="12" y="15" width="3" height="3" rx="0.5" fill="currentColor" opacity="0.2"/>
+      <rect x="17" y="15" width="2" height="2" rx="0.5" fill="currentColor" opacity="0.15"/>`
     },
     {
       title: 'Beautiful Albums',
       description: 'Create stunning photo albums with customizable themes and layouts that showcase your memories perfectly.',
-      icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>'
+      icon: `<rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+      <rect x="3" y="3" width="18" height="18" rx="2" fill="currentColor" opacity="0.05"/>
+      <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" opacity="0.6"/>
+      <path stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" d="m21 15-5-5L5 21l5-5"/>
+      <rect x="13" y="7" width="6" height="4" rx="1" fill="currentColor" opacity="0.3"/>
+      <rect x="13" y="13" width="6" height="2" rx="1" fill="currentColor" opacity="0.2"/>
+      <rect x="13" y="16" width="4" height="2" rx="1" fill="currentColor" opacity="0.15"/>
+      <path stroke="currentColor" stroke-width="0.5" fill="none" d="M1 1l2 2m17-2l2 2m-2 17l2 2m-19 0l2-2" opacity="0.2"/>`
     },
     {
       title: 'Collaborative Memories',
       description: 'Let family members add their own photos and memories to shared albums. Build stories together.',
-      icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>'
+      icon: `<path stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2" fill="none"/>
+      <circle cx="9" cy="7" r="1" fill="currentColor" opacity="0.6"/>
+      <path stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" d="m22 21-3-3 3-3"/>
+      <circle cx="20" cy="8" r="3" stroke="currentColor" stroke-width="2" fill="none"/>
+      <circle cx="20" cy="8" r="0.8" fill="currentColor" opacity="0.6"/>
+      <path stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round" d="M12 12h3l2 2-2 2h-3" opacity="0.4"/>
+      <circle cx="5" cy="3" r="1" fill="currentColor" opacity="0.3"/>
+      <circle cx="19" cy="2" r="1" fill="currentColor" opacity="0.4"/>
+      <circle cx="2" cy="20" r="1" fill="currentColor" opacity="0.25"/>`
     },
     {
       title: 'Cross-Platform Access',
       description: 'Access your memories anywhere, anytime. Works perfectly on desktop, tablet, and mobile devices.',
-      icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>'
+      icon: `<rect x="17" y="4" width="6" height="12" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/>
+      <rect x="17" y="4" width="6" height="12" rx="1" fill="currentColor" opacity="0.05"/>
+      <circle cx="20" cy="14.5" r="0.5" fill="currentColor"/>
+      <rect x="8" y="6" width="8" height="12" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/>
+      <rect x="8" y="6" width="8" height="12" rx="1" fill="currentColor" opacity="0.08"/>
+      <circle cx="12" cy="16.5" r="0.5" fill="currentColor"/>
+      <rect x="1" y="8" width="12" height="8" rx="1" stroke="currentColor" stroke-width="2" fill="none"/>
+      <rect x="1" y="8" width="12" height="8" rx="1" fill="currentColor" opacity="0.1"/>
+      <path stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" d="M5 16v2h4v-2"/>
+      <path stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round" d="M14 10l2-2 2 2m-2-2v4" opacity="0.5"/>
+      <path stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round" d="M18 14l-2 2-2-2m2 2v-4" opacity="0.5"/>
+      <circle cx="7" cy="4" r="1" fill="currentColor" opacity="0.4"/>
+      <circle cx="15" cy="20" r="1" fill="currentColor" opacity="0.3"/>
+      <circle cx="21" cy="18" r="1" fill="currentColor" opacity="0.25"/>`
     }
   ];
 
@@ -825,18 +1108,19 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       period: 'forever',
       description: 'Perfect for getting started with your first albums',
       features: [
-        '3 photo albums',
-        '100 photos per album',
+        '6 photo albums',
+        '300 photos per album',
         'Basic sharing',
         'Mobile & web access',
         'Community support'
       ],
       buttonText: 'Get Started Free',
-      featured: false
+      featured: false,
+      link: '/auth/register'
     },
     {
       name: 'Pro',
-      price: 9,
+      price: 10,
       period: 'month',
       description: 'For families who want to preserve all their memories',
       features: [
@@ -847,23 +1131,22 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
         'Custom themes',
         'Download originals'
       ],
-      buttonText: 'Start Free Trial',
+      buttonText: 'Coming Soon',
       featured: true
     },
     {
-      name: 'Family',
-      price: 19,
+      name: 'Premium',
+      price: 29,
       period: 'month',
       description: 'Perfect for large families and special occasions',
       features: [
         'Everything in Pro',
         'Unlimited photos',
-        'Family member accounts',
-        'Advanced organization',
         'Premium themes',
+        'Photo Editing tools',
         'Priority support'
       ],
-      buttonText: 'Start Free Trial',
+      buttonText: 'Coming Soon',
       featured: false
     }
   ];

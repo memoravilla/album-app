@@ -9,6 +9,18 @@ export const routes: Routes = [
     loadComponent: () => import('./website/components/landing.component').then(m => m.LandingComponent)
   },
   {
+    path: 'help',
+    loadComponent: () => import('./website/pages/help-center.component').then(m => m.HelpCenterComponent)
+  },
+  {
+    path: 'privacy',
+    loadComponent: () => import('./website/pages/privacy-policy.component').then(m => m.PrivacyPolicyComponent)
+  },
+  {
+    path: 'terms',
+    loadComponent: () => import('./website/pages/terms-of-service.component').then(m => m.TermsOfServiceComponent)
+  },
+  {
     path: 'auth',
     children: [
       {
