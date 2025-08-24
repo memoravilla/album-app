@@ -270,7 +270,29 @@ export class AlbumMembersComponent {
       .slice(0, 2);
   }
 
-  formatDate(date: Date): string {
-    return date.toLocaleDateString();
+  formatDate(date: Date | any): string {
+    try {
+      if (!date) return '';
+      
+      let actualDate: Date;
+      if (date instanceof Date) {
+        actualDate = date;
+      } else if (date.toDate && typeof date.toDate === 'function') {
+        actualDate = date.toDate();
+      } else if (typeof date === 'string' || typeof date === 'number') {
+        actualDate = new Date(date);
+      } else {
+        return 'Invalid date';
+      }
+      
+      if (isNaN(actualDate.getTime())) {
+        return 'Invalid date';
+      }
+      
+      return actualDate.toLocaleDateString();
+    } catch (error) {
+      console.error('Error formatting date:', error, date);
+      return 'Invalid date';
+    }
   }
 }

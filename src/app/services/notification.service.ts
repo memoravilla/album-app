@@ -74,7 +74,7 @@ export class NotificationService {
             inviterName: invitation.inviterName
           },
           read: false, // Invitations are always considered unread until responded to
-          createdAt: invitation.createdAt
+          createdAt: invitation.createdAt instanceof Date ? invitation.createdAt : new Date(invitation.createdAt)
         }));
 
         console.log(`📨 Created ${invitationNotifications.length} invitation notifications`);

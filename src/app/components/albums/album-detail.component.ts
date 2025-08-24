@@ -771,19 +771,62 @@ export class AlbumDetailComponent implements OnInit {
     }
   }
 
-  formatDate(date: Date | undefined): string {
-    return date ? new Date(date).toLocaleDateString() : '';
+  formatDate(date: Date | any): string {
+    try {
+      if (!date) return '';
+      
+      let actualDate: Date;
+      if (date instanceof Date) {
+        actualDate = date;
+      } else if (date.toDate && typeof date.toDate === 'function') {
+        actualDate = date.toDate();
+      } else if (typeof date === 'string' || typeof date === 'number') {
+        actualDate = new Date(date);
+      } else {
+        return 'Invalid date';
+      }
+      
+      if (isNaN(actualDate.getTime())) {
+        return 'Invalid date';
+      }
+      
+      return actualDate.toLocaleDateString();
+    } catch (error) {
+      console.error('Error formatting date:', error, date);
+      return 'Invalid date';
+    }
   }
 
-  formatDateTime(date: Date): string {
-    const dateObj = date instanceof Date ? date : new Date(date);
-    return dateObj.toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  formatDateTime(date: Date | any): string {
+    try {
+      if (!date) return '';
+      
+      let actualDate: Date;
+      if (date instanceof Date) {
+        actualDate = date;
+      } else if (date.toDate && typeof date.toDate === 'function') {
+        actualDate = date.toDate();
+      } else if (typeof date === 'string' || typeof date === 'number') {
+        actualDate = new Date(date);
+      } else {
+        return 'Invalid date';
+      }
+      
+      if (isNaN(actualDate.getTime())) {
+        return 'Invalid date';
+      }
+      
+      return actualDate.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      console.error('Error formatting datetime:', error, date);
+      return 'Invalid date';
+    }
   }
 
   getUploaderName(uploaderId: string): string {
