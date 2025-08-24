@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": "dis/memoravilla/browser",
+    "public": "dist/memoravilla/browser",
     "ignore": [
       "firebase.json",
       "**/.*",
