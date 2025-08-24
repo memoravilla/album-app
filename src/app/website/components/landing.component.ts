@@ -3,6 +3,7 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { trigger, state, style, transition, animate, query, stagger } from '@angular/animations';
+import { InquiryService } from '../../services/inquiry.service';
 
 interface Founder {
   name: string;
@@ -473,6 +474,17 @@ interface Founder {
               </div>
             </div>
           }
+
+          @if (showErrorMessage()) {
+            <div class="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div class="flex">
+                <svg class="w-5 h-5 text-red-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <p class="text-red-800">Sorry, there was an error sending your message. Please try again later.</p>
+              </div>
+            </div>
+          }
         </div>
       </div>
     </section>
@@ -735,6 +747,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   showMobileMenu = signal(false);
   isSubmitting = signal(false);
   showSuccessMessage = signal(false);
+  showErrorMessage = signal(false);
   
   contactForm: FormGroup;
   private observer?: IntersectionObserver;
@@ -862,6 +875,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
 
   constructor(
     private fb: FormBuilder,
+    private inquiryService: InquiryService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
     this.contactForm = this.fb.group({
@@ -971,12 +985,20 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   async onSubmit() {
     if (this.contactForm.valid) {
       this.isSubmitting.set(true);
+      this.showErrorMessage.set(false); // Reset error message
       
       try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Save the inquiry to Firebase Firestore
+        const formData = {
+          name: this.contactForm.value.name,
+          email: this.contactForm.value.email,
+          subject: this.contactForm.value.subject,
+          message: this.contactForm.value.message
+        };
+
+        const inquiryId = await this.inquiryService.saveContactFormSubmission(formData);
         
-        console.log('Contact form submitted:', this.contactForm.value);
+        console.log('Contact form submitted successfully with ID:', inquiryId);
         this.showSuccessMessage.set(true);
         this.contactForm.reset();
         
@@ -987,6 +1009,12 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
         
       } catch (error) {
         console.error('Error submitting form:', error);
+        this.showErrorMessage.set(true);
+        
+        // Hide error message after 5 seconds
+        setTimeout(() => {
+          this.showErrorMessage.set(false);
+        }, 5000);
       } finally {
         this.isSubmitting.set(false);
       }

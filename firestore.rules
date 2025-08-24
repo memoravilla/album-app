@@ -63,5 +63,13 @@ service cloud.firestore {
       allow list: if request.auth != null && 
         request.auth.uid == resource.data.userId;
     }
+    
+    // Inquiries - allow anyone to create inquiries from contact forms
+    // Only authenticated users can read them (for admin purposes)
+    match /inquiries/{inquiryId} {
+      allow create: if true; // Allow anonymous users to submit contact forms
+      allow read, update, delete: if request.auth != null; // Only authenticated users can read/manage inquiries
+      allow list: if request.auth != null; // Only authenticated users can list inquiries
+    }
   }
 }
