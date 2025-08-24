@@ -84,6 +84,7 @@ import { InvitationService } from '../../services/invitation.service';
                         <div 
                           class="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
                           [class.bg-blue-50]="!notification.read"
+                          [class.bg-yellow-50]="notification.id.startsWith('invitation_')"
                           (click)="handleNotificationClick(notification)"
                         >
                           <div class="flex items-start space-x-3">
@@ -124,7 +125,7 @@ import { InvitationService } from '../../services/invitation.service';
                                 </div>
                               }
                             </div>
-                            @if (!notification.read) {
+                            @if (!notification.read || notification.id.startsWith('invitation_')) {
                               <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
                             }
                           </div>
@@ -305,7 +306,8 @@ export class NavbarComponent {
   }
 
   async handleNotificationClick(notification: any) {
-    if (!notification.read) {
+    // Don't mark invitation notifications as read since they are pending invitations
+    if (!notification.read && !notification.id.startsWith('invitation_')) {
       await this.notificationService.markAsRead(notification.id);
     }
     
@@ -321,7 +323,8 @@ export class NavbarComponent {
     const success = await this.invitationService.respondToInvitation(invitationId, response);
     if (success) {
       console.log(`✅ Invitation ${response}`);
-      // The notification will be updated automatically through Firestore listeners
+      // Refresh notifications to remove the responded invitation
+      await this.notificationService.refreshNotifications();
     }
   }
 
