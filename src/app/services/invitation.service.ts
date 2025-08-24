@@ -1,5 +1,6 @@
+// Import arrayUnion for better Firestore array handling
 import { Injectable, inject } from '@angular/core';
-import { Firestore, collection, addDoc, query, where, getDocs, doc, updateDoc, deleteDoc, getDoc, setDoc } from '@angular/fire/firestore';
+import { Firestore, collection, addDoc, query, where, getDocs, doc, updateDoc, deleteDoc, getDoc, setDoc, arrayUnion } from '@angular/fire/firestore';
 import { AuthService } from './auth.service';
 import { NotificationService } from './notification.service';
 import { AlbumInvitation, User } from '../models/interfaces';
@@ -169,11 +170,29 @@ export class InvitationService {
       const invitation = invitationDoc.data() as AlbumInvitation;
       console.log('📄 Invitation data:', invitation);
 
-      // Verify the current user is the invitee
-      if (invitation.inviteeUid !== currentUser.uid) {
+      // Verify the current user is the invitee (by UID or email)
+      const userEmail = currentUser.email?.toLowerCase();
+      const isInvitee = invitation.inviteeUid === currentUser.uid || 
+                       (invitation.inviteeEmail === userEmail && !invitation.inviteeUid);
+      
+      if (!isInvitee) {
         console.error('❌ User not authorized to respond to this invitation');
         console.error('❌ Expected UID:', invitation.inviteeUid, 'Actual UID:', currentUser.uid);
+        console.error('❌ Expected email:', invitation.inviteeEmail, 'Actual email:', userEmail);
         return false;
+      }
+
+      // If invitation doesn't have inviteeUid but matches email, update it
+      if (!invitation.inviteeUid && invitation.inviteeEmail === userEmail) {
+        console.log('🔄 Updating invitation with user UID...');
+        try {
+          await updateDoc(invitationRef, {
+            inviteeUid: currentUser.uid
+          });
+          console.log('✅ Invitation updated with user UID');
+        } catch (updateError) {
+          console.warn('⚠️ Could not update invitation with UID, continuing anyway:', updateError);
+        }
       }
 
       // Update invitation status first
@@ -205,14 +224,18 @@ export class InvitationService {
             const albumData = albumDoc.data();
             const currentMembers = albumData['members'] || [];
             console.log('👥 Current album members:', currentMembers);
+            console.log('🆔 Current user UID:', currentUser.uid);
             
             if (!currentMembers.includes(currentUser.uid)) {
-              console.log('➕ Adding user to album members...');
-              const updatedMembers = [...currentMembers, currentUser.uid];
-              console.log('👥 Updated members list:', updatedMembers);
+              console.log('➕ Adding user to album members using arrayUnion...');
+              console.log('🔄 Attempting to update album document...');
+              console.log('📄 Album ID:', invitation.albumId);
+              console.log('👤 User attempting update:', currentUser.uid);
+              console.log('📧 User email:', currentUser.email);
               
+              // Use arrayUnion instead of manual array manipulation
               await updateDoc(albumRef, {
-                members: updatedMembers
+                members: arrayUnion(currentUser.uid)
               });
               console.log('✅ User added to album members successfully');
             } else {
@@ -228,6 +251,14 @@ export class InvitationService {
           console.error('❌ Error message:', albumUpdateError.message);
           console.error('❌ Album ID:', invitation.albumId);
           console.error('❌ User UID:', currentUser.uid);
+          console.error('❌ User email:', currentUser.email);
+          
+          if (albumUpdateError.code === 'permission-denied') {
+            console.error('❌ PERMISSION DENIED - Album update failed');
+            console.error('❌ This suggests Firestore rules are blocking the album update');
+            console.error('❌ Make sure the Firestore rules allow users to update album members');
+          }
+          
           return false;
         }
 
@@ -563,6 +594,154 @@ export class InvitationService {
       
     } catch (error: any) {
       console.error('❌ DEBUG: User creation test failed:', error);
+    }
+  }
+
+  // Debug method to test invitation acceptance permissions
+  async debugInvitationAcceptance(invitationId: string): Promise<void> {
+    try {
+      const currentUser = this.authService.currentUser();
+      if (!currentUser) {
+        console.error('🚫 DEBUG: No authenticated user');
+        return;
+      }
+
+      console.log('🔍 DEBUG: Starting invitation acceptance debug');
+      console.log('👤 Current user:', currentUser.uid, currentUser.email);
+
+      const invitationRef = doc(this.firestore, 'albumInvitations', invitationId);
+      const invitationDoc = await getDoc(invitationRef);
+
+      if (!invitationDoc.exists()) {
+        console.error('🚫 DEBUG: Invitation not found');
+        return;
+      }
+
+      const invitation = invitationDoc.data() as AlbumInvitation;
+      console.log('📄 DEBUG: Invitation data:', invitation);
+
+      const albumRef = doc(this.firestore, 'albums', invitation.albumId);
+      const albumDoc = await getDoc(albumRef);
+
+      if (!albumDoc.exists()) {
+        console.error('🚫 DEBUG: Album not found');
+        return;
+      }
+
+      const albumData = albumDoc.data();
+      console.log('📄 DEBUG: Album data:', albumData);
+      console.log('👥 DEBUG: Current members:', albumData['members']);
+      console.log('👨‍💼 DEBUG: Current admins:', albumData['admins']);
+      console.log('👤 DEBUG: Created by:', albumData['createdBy']);
+
+      // Test if user can read the album
+      console.log('🔍 DEBUG: Testing album read permission...');
+      try {
+        await getDoc(albumRef);
+        console.log('✅ DEBUG: Album read permission OK');
+      } catch (readError) {
+        console.error('🚫 DEBUG: Album read permission failed:', readError);
+      }
+
+      // Test if user can update the invitation
+      console.log('🔍 DEBUG: Testing invitation update permission...');
+      try {
+        await updateDoc(invitationRef, {
+          debugTest: new Date()
+        });
+        console.log('✅ DEBUG: Invitation update permission OK');
+        // Clean up the debug field
+        await updateDoc(invitationRef, {
+          debugTest: null
+        });
+      } catch (invitationError) {
+        console.error('🚫 DEBUG: Invitation update permission failed:', invitationError);
+      }
+
+      // Test if user can update the album
+      console.log('🔍 DEBUG: Testing album update permission...');
+      try {
+        await updateDoc(albumRef, {
+          debugTest: new Date()
+        });
+        console.log('✅ DEBUG: Album update permission OK');
+        // Clean up the debug field
+        await updateDoc(albumRef, {
+          debugTest: null
+        });
+      } catch (albumError: any) {
+        console.error('🚫 DEBUG: Album update permission failed:', albumError);
+        console.error('🚫 DEBUG: Error code:', albumError.code);
+        console.error('🚫 DEBUG: Error message:', albumError.message);
+      }
+
+    } catch (error) {
+      console.error('🚫 DEBUG: Debug method failed:', error);
+    }
+  }
+
+  // Debug method to test overall Firestore connectivity and authentication
+  async debugFirestoreConnection(): Promise<void> {
+    try {
+      const currentUser = this.authService.currentUser();
+      console.log('🔍 DEBUG: Firestore Connection Test');
+      console.log('👤 Current user:', currentUser ? {
+        uid: currentUser.uid,
+        email: currentUser.email,
+        displayName: currentUser.displayName
+      } : 'No user');
+
+      if (!currentUser) {
+        console.error('🚫 DEBUG: No authenticated user - stopping test');
+        return;
+      }
+
+      // Test reading user's own document
+      console.log('🔍 DEBUG: Testing user document access...');
+      const userRef = doc(this.firestore, 'users', currentUser.uid);
+      try {
+        const userDoc = await getDoc(userRef);
+        console.log('✅ DEBUG: User document read successful, exists:', userDoc.exists());
+        if (userDoc.exists()) {
+          console.log('📄 DEBUG: User data:', userDoc.data());
+        }
+      } catch (userError) {
+        console.error('🚫 DEBUG: User document read failed:', userError);
+      }
+
+      // Test querying invitations for current user
+      console.log('🔍 DEBUG: Testing invitation queries...');
+      try {
+        const invitationQuery = query(
+          collection(this.firestore, 'albumInvitations'),
+          where('inviteeUid', '==', currentUser.uid),
+          where('status', '==', 'pending')
+        );
+        const invitationSnapshot = await getDocs(invitationQuery);
+        console.log('✅ DEBUG: Invitation query successful, found:', invitationSnapshot.docs.length);
+        
+        invitationSnapshot.docs.forEach(doc => {
+          console.log('📄 DEBUG: Invitation:', doc.id, doc.data());
+        });
+      } catch (queryError) {
+        console.error('🚫 DEBUG: Invitation query failed:', queryError);
+      }
+
+      // Test querying albums where user is member
+      console.log('🔍 DEBUG: Testing album queries...');
+      try {
+        const albumQuery = query(
+          collection(this.firestore, 'albums'),
+          where('members', 'array-contains', currentUser.uid)
+        );
+        const albumSnapshot = await getDocs(albumQuery);
+        console.log('✅ DEBUG: Album query successful, found:', albumSnapshot.docs.length);
+      } catch (albumQueryError) {
+        console.error('🚫 DEBUG: Album query failed:', albumQueryError);
+      }
+
+    } catch (error) {
+      console.error('🚫 DEBUG: Overall debug test failed:', error);
     }
   }
 }

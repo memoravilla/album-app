@@ -355,4 +355,13 @@ export class NavbarComponent {
     this.closeAllMenus();
     await this.authService.signOut();
   }
+
+  // Debug method - you can call this from browser console
+  async debugNotifications() {
+    console.log('🐛 DEBUG: Current notifications:', this.notificationService.notifications());
+    console.log('🐛 DEBUG: Unread count:', this.notificationService.unreadCount());
+    console.log('🐛 DEBUG: Current user:', this.authService.currentUser());
+    await this.notificationService.refreshNotifications();
+    console.log('🐛 DEBUG: After refresh - notifications:', this.notificationService.notifications());
+  }
 }

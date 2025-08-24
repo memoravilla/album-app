@@ -57,7 +57,10 @@ export class NotificationService {
 
       // Load pending invitations and convert them to notifications
       try {
+        console.log('🔄 Loading pending invitations for notifications...');
         const pendingInvitations = await this.loadPendingInvitations(userId);
+        console.log(`📨 Found ${pendingInvitations.length} pending invitations`);
+        
         const invitationNotifications: Notification[] = pendingInvitations.map(invitation => ({
           id: `invitation_${invitation.id}`,
           userId: userId,
@@ -74,10 +77,14 @@ export class NotificationService {
           createdAt: invitation.createdAt
         }));
 
+        console.log(`📨 Created ${invitationNotifications.length} invitation notifications`);
+
         // Combine and sort all notifications by date
         const allNotifications = [...regularNotifications, ...invitationNotifications]
           .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
+        console.log(`📨 Total notifications: ${allNotifications.length} (${regularNotifications.length} regular + ${invitationNotifications.length} invitations)`);
+        
         this.notifications.set(allNotifications);
         this.unreadCount.set(allNotifications.filter(n => !n.read).length);
       } catch (error) {
@@ -91,34 +98,69 @@ export class NotificationService {
 
   private async loadPendingInvitations(userId: string): Promise<AlbumInvitation[]> {
     try {
+      const currentUser = this.authService.currentUser();
+      if (!currentUser || !currentUser.email) {
+        console.log('🔍 No current user or email for invitation lookup');
+        return [];
+      }
+
+      console.log('🔍 Loading pending invitations for user:', userId, 'email:', currentUser.email);
+      
       const invitationsRef = collection(this.firestore, 'albumInvitations');
-      const q = query(
-        invitationsRef,
-        where('inviteeUid', '==', userId),
-        where('status', '==', 'pending')
-      );
+      
+      // Query by both UID (for registered users) and email (for unregistered users when invitation was sent)
+      const queries = [
+        // Query by inviteeUid
+        query(
+          invitationsRef,
+          where('inviteeUid', '==', userId),
+          where('status', '==', 'pending')
+        ),
+        // Query by inviteeEmail (for cases where user registered after invitation was sent)
+        query(
+          invitationsRef,
+          where('inviteeEmail', '==', currentUser.email.toLowerCase()),
+          where('status', '==', 'pending')
+        )
+      ];
 
-      const snapshot = await getDocs(q);
-      const invitations: AlbumInvitation[] = [];
+      const allInvitations = new Map<string, AlbumInvitation>();
 
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        invitations.push({
-          id: doc.id,
-          albumId: data['albumId'],
-          albumName: data['albumName'],
-          inviterUid: data['inviterUid'],
-          inviterName: data['inviterName'],
-          inviterEmail: data['inviterEmail'],
-          inviteeEmail: data['inviteeEmail'],
-          inviteeUid: data['inviteeUid'],
-          status: data['status'],
-          createdAt: data['createdAt']?.toDate() || new Date(),
-          expiresAt: data['expiresAt']?.toDate() || new Date(),
-          respondedAt: data['respondedAt']?.toDate()
-        });
-      });
+      // Execute both queries and combine results
+      for (const q of queries) {
+        try {
+          const snapshot = await getDocs(q);
+          console.log(`📨 Query returned ${snapshot.size} invitations`);
+          
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            const invitation: AlbumInvitation = {
+              id: doc.id,
+              albumId: data['albumId'],
+              albumName: data['albumName'],
+              inviterUid: data['inviterUid'],
+              inviterName: data['inviterName'],
+              inviterEmail: data['inviterEmail'],
+              inviteeEmail: data['inviteeEmail'],
+              inviteeUid: data['inviteeUid'],
+              status: data['status'],
+              createdAt: data['createdAt']?.toDate() || new Date(),
+              expiresAt: data['expiresAt']?.toDate() || new Date(),
+              respondedAt: data['respondedAt']?.toDate()
+            };
+            
+            // Use Map to avoid duplicates
+            allInvitations.set(invitation.id, invitation);
+            console.log('✅ Found invitation:', invitation.id, 'for email:', invitation.inviteeEmail);
+          });
+        } catch (queryError) {
+          console.error('❌ Error executing invitation query:', queryError);
+        }
+      }
 
+      const invitations = Array.from(allInvitations.values());
+      console.log(`📨 Total unique pending invitations found: ${invitations.length}`);
+      
       return invitations;
     } catch (error) {
       console.error('❌ Error fetching pending invitations:', error);
@@ -183,8 +225,9 @@ export class NotificationService {
   async refreshNotifications() {
     const user = this.authService.currentUser();
     if (user) {
+      console.log('🔄 Manually refreshing notifications for user:', user.email);
       // Force reload of notifications including pending invitations
-      this.loadNotifications(user.uid);
+      await this.loadNotifications(user.uid);
     }
   }
 }
