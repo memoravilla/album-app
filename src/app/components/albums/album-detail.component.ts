@@ -503,12 +503,25 @@ export class AlbumDetailComponent implements OnInit {
 
   private async loadPendingInvites(albumId: string) {
     try {
-      console.log('🔄 Loading pending invitations for album:', albumId);
+      // Only load invitations if user is an admin
+      if (!this.isUserAdmin()) {
+        console.log('� User is not admin, skipping invitation loading');
+        this.pendingInvites.set([]);
+        return;
+      }
+
+      console.log('�🔄 Loading pending invitations for album:', albumId);
       const invites = await this.invitationService.getAlbumInvitations(albumId);
       this.pendingInvites.set(invites);
       console.log('📨 Loaded pending invitations:', invites.length);
-    } catch (error) {
-      console.error('Error loading pending invitations:', error);
+    } catch (error: any) {
+      console.error('❌ Error loading pending invitations:', error);
+      console.error('❌ Error code:', error.code);
+      
+      if (error.code === 'permission-denied') {
+        console.error('❌ Permission denied - user may not have admin access to this album');
+      }
+      
       this.pendingInvites.set([]);
     }
   }

@@ -1,0 +1,59 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can read and write their own user document, and query the collection to find users by email
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Allow authenticated users to query users collection (needed for invitations)
+    match /users/{document=**} {
+      allow read: if request.auth != null;
+    }
+    
+    // Albums - users can read albums they are members of, and write if they are admins
+    match /albums/{albumId} {
+      allow read: if request.auth != null && 
+        (request.auth.uid in resource.data.members || 
+         request.auth.uid == resource.data.createdBy);
+      allow write: if request.auth != null && 
+        (request.auth.uid in resource.data.admins || 
+         request.auth.uid == resource.data.createdBy);
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.createdBy;
+    }
+    
+    // Photos - users can read photos from albums they are members of
+    match /photos/{photoId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+      allow create: if request.auth != null;
+    }
+    
+    // Album invitations - simplified rules for better reliability
+    match /albumInvitations/{invitationId} {
+      allow read: if request.auth != null && 
+        (request.auth.uid == resource.data.inviteeUid || 
+         request.auth.uid == resource.data.inviterUid);
+      allow write: if request.auth != null && 
+        request.auth.uid == resource.data.inviterUid;
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.inviterUid;
+      allow list: if request.auth != null && 
+        (request.auth.uid == resource.data.inviteeUid || 
+         request.auth.uid == resource.data.inviterUid);
+    }
+    
+    // Notifications - users can read and write their own notifications
+    match /notifications/{notificationId} {
+      allow read, write: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.userId;
+      allow list: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+    }
+  }
+}

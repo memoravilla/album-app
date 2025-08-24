@@ -130,22 +130,40 @@ export class AuthService {
   async registerWithEmail(email: string, password: string, displayName: string): Promise<boolean> {
     try {
       this.isLoading.set(true);
-      console.log('Starting email registration...');
+      console.log('🔄 Starting email registration for:', email);
       
       const credential = await createUserWithEmailAndPassword(this.auth, email, password);
-      console.log('Email registration successful, user:', credential.user.email);
+      console.log('✅ Email registration successful, user UID:', credential.user.uid);
       
-      // Update the display name
+      // Update the Firebase Auth profile first
+      console.log('🔄 Updating Firebase Auth profile...');
       await updateProfile(credential.user, { displayName });
+      console.log('✅ Firebase Auth profile updated');
       
+      // Create the Firestore user document
+      console.log('🔄 Creating Firestore user document...');
       const userData = await this.createUserDocument(credential.user, displayName);
+      console.log('✅ User document process completed');
       
-      console.log('Setting current user in signal:', userData);
+      console.log('🔄 Setting current user in signal:', userData.email);
       this.currentUser.set(userData);
+      console.log('✅ Registration process completed successfully');
       
       return true;
-    } catch (error) {
-      console.error('Email registration error:', error);
+    } catch (error: any) {
+      console.error('❌ Email registration error:', error);
+      console.error('❌ Error code:', error.code);
+      console.error('❌ Error message:', error.message);
+      
+      // Handle specific Firebase Auth errors
+      if (error.code === 'auth/email-already-in-use') {
+        console.error('❌ Email already in use');
+      } else if (error.code === 'auth/invalid-email') {
+        console.error('❌ Invalid email format');
+      } else if (error.code === 'auth/weak-password') {
+        console.error('❌ Password is too weak');
+      }
+      
       return false;
     } finally {
       this.isLoading.set(false);
@@ -301,8 +319,11 @@ export class AuthService {
   private async createUserDocument(firebaseUser: FirebaseUser, displayName: string): Promise<User> {
     try {
       const userRef = doc(this.firestore, `users/${firebaseUser.uid}`);
+      console.log('🔄 Creating/updating user document for UID:', firebaseUser.uid);
+      console.log('🔄 User email:', firebaseUser.email);
+      console.log('🔄 Display name:', displayName);
       
-      // Always create/update the user data object
+      // Always create/update the user data object with proper Firestore timestamp
       const userData: User = {
         uid: firebaseUser.uid,
         email: firebaseUser.email || '',
@@ -314,33 +335,69 @@ export class AuthService {
       try {
         const userSnap = await getDoc(userRef);
         if (!userSnap.exists()) {
-          console.log('Creating new user document');
-          await setDoc(userRef, userData);
+          console.log('📝 Creating new user document in Firestore for:', firebaseUser.email);
+          await setDoc(userRef, {
+            ...userData,
+            createdAt: new Date() // Ensure fresh timestamp
+          });
+          console.log('✅ User document created successfully in Firestore');
         } else {
-          console.log('User document already exists, updating if needed');
-          // Update with latest info
+          console.log('📝 User document already exists, updating if needed for:', firebaseUser.email);
+          // Update with latest info, but preserve original createdAt
+          const existingData = userSnap.data() as User;
           await updateDoc(userRef, {
             displayName: displayName,
-            photoURL: firebaseUser.photoURL || undefined
+            photoURL: firebaseUser.photoURL || undefined,
+            email: firebaseUser.email || '' // Ensure email is up to date
           });
+          console.log('✅ User document updated successfully in Firestore');
+          
+          // Return the existing data with updated fields
+          return {
+            ...existingData,
+            displayName: displayName,
+            photoURL: firebaseUser.photoURL || undefined,
+            email: firebaseUser.email || ''
+          };
         }
-      } catch (firestoreError) {
-        console.warn('Firestore operation failed, continuing with auth:', firestoreError);
-        // Don't throw error, just continue with auth
+      } catch (firestoreError: any) {
+        console.error('❌ Firestore operation failed:', firestoreError);
+        console.error('❌ Error code:', firestoreError.code);
+        console.error('❌ Error message:', firestoreError.message);
+        console.error('❌ Error details:', firestoreError);
+        
+        // Check for specific Firestore errors
+        if (firestoreError.code === 'permission-denied') {
+          console.error('❌ Permission denied - check Firestore security rules');
+          console.error('❌ Attempting to create user document for UID:', firebaseUser.uid);
+          console.error('❌ User is authenticated:', !!firebaseUser);
+        } else if (firestoreError.code === 'unavailable') {
+          console.error('❌ Firestore unavailable - check network connection');
+        } else if (firestoreError.code === 'unauthenticated') {
+          console.error('❌ User not authenticated for Firestore operations');
+        }
+        
+        // For now, return the user data anyway but log the error
+        console.warn('⚠️ Continuing with user data despite Firestore error');
       }
 
       return userData;
-    } catch (error) {
-      console.error('Create user document error:', error);
+    } catch (error: any) {
+      console.error('❌ Create user document error:', error);
+      console.error('❌ User UID:', firebaseUser.uid);
+      console.error('❌ User email:', firebaseUser.email);
       
-      // Return user data even if Firestore fails
-      return {
+      // Return user data even if Firestore fails, but log the error clearly
+      const fallbackData = {
         uid: firebaseUser.uid,
         email: firebaseUser.email || '',
         displayName: displayName,
         photoURL: firebaseUser.photoURL || undefined,
         createdAt: new Date()
       };
+      
+      console.warn('⚠️ Returning fallback user data due to Firestore error');
+      return fallbackData;
     }
   }
 
