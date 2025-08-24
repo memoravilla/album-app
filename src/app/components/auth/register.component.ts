@@ -12,7 +12,10 @@ import { AuthService } from '../../services/auth.service';
     <div class="min-h-screen bg-gradient-to-br from-beige-50 to-primary-100 flex items-center justify-center px-4">
       <div class="max-w-md w-full space-y-8">
         <div class="text-center">
-          <h1 class="text-4xl font-bold text-primary-900 mb-2">Memoravilla</h1>
+          <div class="flex items-center justify-center mb-8">
+            <img src="assets/icons/Memorabilia.png" alt="Memoravilla" class="h-40 w-auto mr-3">
+            <h1 class="text-4xl font-bold text-primary-900">Memoravilla</h1>
+          </div>
           <p class="text-primary-700">Create your account</p>
         </div>
 
@@ -169,7 +172,7 @@ export class RegisterComponent implements OnInit {
     effect(() => {
       if (this.authService.isInitialized() && this.authService.currentUser()) {
         console.log('Register component: User already authenticated, redirecting to dashboard');
-        this.router.navigate(['/dashboard']);
+        this.router.navigate(['/app/dashboard']);
       }
     });
   }
@@ -178,7 +181,7 @@ export class RegisterComponent implements OnInit {
     // Additional check on component init in case effect doesn't catch it
     if (this.authService.currentUser()) {
       console.log('Register component: User already authenticated on init, redirecting to dashboard');
-      this.router.navigate(['/dashboard']);
+      this.router.navigate(['/app/dashboard']);
     }
   }
 
@@ -199,7 +202,7 @@ export class RegisterComponent implements OnInit {
       const success = await this.authService.registerWithEmail(email!, password!, displayName!);
       
       if (success) {
-        this.router.navigate(['/dashboard']);
+        this.router.navigate(['/app/dashboard']);
       } else {
         this.errorMessage.set('Account creation failed. Please try again.');
       }
@@ -210,7 +213,7 @@ export class RegisterComponent implements OnInit {
     const success = await this.authService.signInWithGoogle();
     
     if (success) {
-      this.router.navigate(['/dashboard']);
+      this.router.navigate(['/app/dashboard']);
     } else {
       this.errorMessage.set('Google sign-in failed. Please try again.');
     }

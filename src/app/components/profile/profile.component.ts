@@ -1,29 +1,30 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { User } from '../../models/interfaces';
+import { Storage, ref, uploadBytes, getDownloadURL } from '@angular/fire/storage';
+import { updateProfile } from '@angular/fire/auth';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { NavbarComponent } from '../shared/navbar-new.component';
-import { User } from '../../models/interfaces';
-import { Storage, ref, uploadBytes, getDownloadURL } from '@angular/fire/storage';
+import { Component, effect, inject, OnInit, signal } from '@angular/core';
+import { from } from 'rxjs';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
   imports: [CommonModule, FormsModule, NavbarComponent],
   template: `
-    <app-navbar></app-navbar>
-    
     <div class="min-h-screen bg-beige-50">
       <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="bg-white rounded-xl shadow-sm border border-primary-100 overflow-hidden">
           <!-- Profile Header -->
           <div class="bg-gradient-to-r from-primary-500 to-beige-500 px-8 py-12">
             <div class="flex items-center space-x-6">
-              @if (currentUser()?.photoURL) {
+              @if (currentUser()?.photoURL && !profileImageError()) {
                 <img
                   [src]="currentUser()?.photoURL"
                   [alt]="currentUser()?.displayName"
                   class="w-24 h-24 rounded-full border-4 border-white shadow-lg object-cover"
+                  (error)="profileImageError.set(true)"
                 />
               } @else {
                 <div class="w-24 h-24 bg-white rounded-full flex items-center justify-center border-4 border-white shadow-lg">
@@ -96,11 +97,12 @@ import { Storage, ref, uploadBytes, getDownloadURL } from '@angular/fire/storage
                         alt="Preview"
                         class="w-20 h-20 rounded-full object-cover border-2 border-primary-200"
                       />
-                    } @else if (currentUser()?.photoURL) {
+                    } @else if (currentUser()?.photoURL && !editImageError()) {
                       <img
                         [src]="currentUser()?.photoURL"
                         [alt]="currentUser()?.displayName"
                         class="w-20 h-20 rounded-full object-cover border-2 border-primary-200"
+                        (error)="editImageError.set(true)"
                       />
                     } @else {
                       <div class="w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center border-2 border-primary-200">
@@ -340,11 +342,22 @@ export class ProfileComponent implements OnInit {
   previewUrl = signal<string>('');
   errorMessage = signal<string>('');
   successMessage = signal<string>('');
+  profileImageError = signal(false);
+  editImageError = signal(false);
 
   editForm = {
     displayName: '',
     bio: ''
   };
+
+  constructor() {
+    // Reset image errors when user changes
+    effect(() => {
+      const currentUser = this.currentUser();
+      this.profileImageError.set(false);
+      this.editImageError.set(false);
+    }, { allowSignalWrites: true });
+  }
 
   ngOnInit() {
     this.resetForm();

@@ -5,6 +5,7 @@ import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
 import { InvitationService } from '../../services/invitation.service';
 import { formatRelativeDate } from '../../utils/date-utils';
+import { effect } from '@angular/core';
 
 @Component({
   selector: 'app-navbar',
@@ -16,15 +17,16 @@ import { formatRelativeDate } from '../../utils/date-utils';
         <div class="flex justify-between items-center h-16">
           <!-- Logo -->
           <div class="flex items-center">
-            <a routerLink="/dashboard" class="text-2xl font-bold text-primary-900">
-              Memoravilla
+            <a routerLink="/app/dashboard" class="flex items-center">
+              <img src="assets/icons/Memorabilia.png" alt="Memoravilla" class="h-40 w-auto mr-2">
+              <span class="text-2xl font-bold text-primary-900">Memoravilla</span>
             </a>
           </div>
 
           <!-- Navigation Links -->
           <div class="hidden md:flex items-center space-x-8">
             <a
-              routerLink="/dashboard"
+              routerLink="/app/dashboard"
               routerLinkActive="bg-primary-100 text-primary-800 font-semibold"
               [routerLinkActiveOptions]="{exact: false}"
               class="text-primary-600 hover:text-primary-700 hover:bg-primary-50 px-4 py-2 rounded-lg text-sm font-medium transition-all"
@@ -32,7 +34,7 @@ import { formatRelativeDate } from '../../utils/date-utils';
               Dashboard
             </a>
             <a
-              routerLink="/albums"
+              routerLink="/app/albums"
               routerLinkActive="bg-primary-100 text-primary-800 font-semibold"
               class="text-primary-600 hover:text-primary-700 hover:bg-primary-50 px-4 py-2 rounded-lg text-sm font-medium transition-all"
             >
@@ -145,11 +147,12 @@ import { formatRelativeDate } from '../../utils/date-utils';
               (click)="toggleUserMenu()"
               class="flex items-center space-x-3 text-sm bg-white border border-primary-200 rounded-full p-2 hover:shadow-md transition-shadow"
             >
-              @if (user()?.photoURL) {
+              @if (user()?.photoURL && !userImageError()) {
                 <img
                   [src]="user()?.photoURL"
                   [alt]="user()?.displayName"
                   class="w-8 h-8 rounded-full object-cover"
+                  (error)="userImageError.set(true)"
                 />
               } @else {
                 <div class="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
@@ -178,7 +181,7 @@ import { formatRelativeDate } from '../../utils/date-utils';
                   </div>
                   
                   <a
-                    routerLink="/profile"
+                    routerLink="/app/profile"
                     routerLinkActive="bg-primary-100 text-primary-800 font-semibold"
                     (click)="closeUserMenu()"
                     class="flex items-center px-4 py-2 text-sm text-primary-700 hover:bg-primary-50 transition-colors rounded-md mx-2"
@@ -221,7 +224,7 @@ import { formatRelativeDate } from '../../utils/date-utils';
           <div class="md:hidden border-t border-primary-100">
             <div class="px-2 pt-2 pb-3 space-y-1">
               <a
-                routerLink="/dashboard"
+                routerLink="/app/dashboard"
                 routerLinkActive="bg-primary-100 text-primary-800 font-semibold"
                 [routerLinkActiveOptions]="{exact: false}"
                 (click)="closeMobileMenu()"
@@ -230,7 +233,7 @@ import { formatRelativeDate } from '../../utils/date-utils';
                 Dashboard
               </a>
               <a
-                routerLink="/albums"
+                routerLink="/app/albums"
                 routerLinkActive="bg-primary-100 text-primary-800 font-semibold"
                 (click)="closeMobileMenu()"
                 class="block px-3 py-2 text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-md text-base font-medium transition-all"
@@ -262,6 +265,15 @@ export class NavbarComponent {
   showUserMenu = signal(false);
   showMobileMenu = signal(false);
   showNotifications = signal(false);
+  userImageError = signal(false);
+
+  constructor() {
+    // Reset image error when user changes
+    effect(() => {
+      const currentUser = this.user();
+      this.userImageError.set(false);
+    }, { allowSignalWrites: true });
+  }
 
   toggleUserMenu() {
     this.showUserMenu.set(!this.showUserMenu());
@@ -314,7 +326,7 @@ export class NavbarComponent {
     
     // Navigate based on notification type
     if (notification.type === 'album_invitation' && notification.data?.albumId) {
-      this.router.navigate(['/albums', notification.data.albumId]);
+      this.router.navigate(['/app/albums', notification.data.albumId]);
     }
     
     this.closeNotifications();

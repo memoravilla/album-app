@@ -96,11 +96,12 @@ import { AlbumMember } from '../../models/interfaces';
             @for (member of members(); track member.uid) {
               <div class="p-6 flex items-center justify-between">
                 <div class="flex items-center space-x-4">
-                  @if (member.photoURL) {
+                  @if (member.photoURL && !isImageFailed(member.photoURL)) {
                     <img
                       [src]="member.photoURL"
                       [alt]="member.displayName"
                       class="w-10 h-10 rounded-full object-cover"
+                      (error)="onImageError(member.photoURL)"
                     />
                   } @else {
                     <div class="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center">
@@ -169,6 +170,7 @@ export class AlbumMembersComponent {
   inviteError = signal<string>('');
   inviteSuccess = signal<string>('');
   isAdmin = signal(false);
+  failedImageUrls = signal<Set<string>>(new Set());
 
   inviteForm = this.fb.group({
     email: ['', [Validators.required, Validators.email]]
@@ -294,5 +296,16 @@ export class AlbumMembersComponent {
       console.error('Error formatting date:', error, date);
       return 'Invalid date';
     }
+  }
+
+  onImageError(photoURL: string) {
+    const current = this.failedImageUrls();
+    const updated = new Set(current);
+    updated.add(photoURL);
+    this.failedImageUrls.set(updated);
+  }
+
+  isImageFailed(photoURL: string): boolean {
+    return this.failedImageUrls().has(photoURL);
   }
 }

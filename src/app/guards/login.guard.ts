@@ -14,7 +14,7 @@ export const loginGuard: CanActivateFn = async (route, state) => {
   if (isAuthenticated) {
     console.log('✅ Login Guard: User is authenticated, redirecting to dashboard');
     // User is already logged in, redirect to dashboard
-    router.navigate(['/dashboard']);
+    router.navigate(['/app/dashboard']);
     return false;
   } else {
     console.log('✅ Login Guard: User not authenticated, allowing access to login/register');

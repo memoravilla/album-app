@@ -4,15 +4,12 @@ import { Router } from '@angular/router';
 import { AlbumService } from '../../services/album.service';
 import { AuthService } from '../../services/auth.service';
 import { Album } from '../../models/interfaces';
-import { NavbarComponent } from '../shared/navbar-new.component';
 
 @Component({
   selector: 'app-albums',
   standalone: true,
-  imports: [CommonModule, NavbarComponent],
+  imports: [CommonModule],
   template: `
-    <app-navbar></app-navbar>
-    
     <div class="min-h-screen bg-beige-50">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Header -->
@@ -104,12 +101,13 @@ import { NavbarComponent } from '../shared/navbar-new.component';
               <div class="bg-white rounded-xl shadow-sm border border-primary-100 overflow-hidden hover:shadow-md transition-shadow">
                 <!-- Album Cover -->
                 <div class="relative bg-primary-50">
-                  @if (album.coverPhotoUrl) {
+                  @if (album.coverPhotoUrl && !isCoverImageFailed(album.coverPhotoUrl)) {
                     <img
                       [src]="album.coverPhotoUrl"
                       [alt]="album.name"
                       class="w-full h-48 object-cover cursor-pointer"
                       (click)="navigateToAlbum(album.id)"
+                      (error)="onCoverImageError(album.coverPhotoUrl)"
                     />
                   } @else {
                     <div 
@@ -230,6 +228,7 @@ export class AlbumsComponent implements OnInit {
   albums = this.albumService.userAlbums;
   currentFilter = signal<'all' | 'admin' | 'member'>('all');
   activeMenuId = signal<string | null>(null);
+  failedCoverImages = signal<Set<string>>(new Set());
 
   ngOnInit() {
     console.log('📱 Albums component initializing...');
@@ -296,12 +295,12 @@ export class AlbumsComponent implements OnInit {
 
   navigateToAlbum(albumId: string) {
     this.closeMenus();
-    this.router.navigate(['/albums', albumId]);
+    this.router.navigate(['/app/albums', albumId]);
   }
 
   openCreateAlbumModal() {
     // Navigate to dashboard where the modal is implemented
-    this.router.navigate(['/dashboard']);
+    this.router.navigate(['/app/dashboard']);
   }
 
   editAlbum(album: Album) {
@@ -345,5 +344,16 @@ export class AlbumsComponent implements OnInit {
       console.error('Error formatting date:', error, date);
       return 'Invalid date';
     }
+  }
+
+  onCoverImageError(coverPhotoUrl: string) {
+    const current = this.failedCoverImages();
+    const updated = new Set(current);
+    updated.add(coverPhotoUrl);
+    this.failedCoverImages.set(updated);
+  }
+
+  isCoverImageFailed(coverPhotoUrl: string): boolean {
+    return this.failedCoverImages().has(coverPhotoUrl);
   }
 }

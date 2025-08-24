@@ -6,15 +6,12 @@ import { AuthService } from '../../services/auth.service';
 import { AlbumService } from '../../services/album.service';
 import { InvitationService } from '../../services/invitation.service';
 import { Album, AlbumInvitation } from '../../models/interfaces';
-import { NavbarComponent } from '../shared/navbar-new.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, NavbarComponent],
+  imports: [CommonModule, RouterLink, FormsModule],
   template: `
-    <app-navbar></app-navbar>
-    
     <div class="min-h-screen bg-beige-50">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Welcome Section -->
@@ -163,11 +160,12 @@ import { NavbarComponent } from '../shared/navbar-new.component';
                 @for (album of recentAlbums(); track album.id) {
                   <div class="group cursor-pointer" (click)="navigateToAlbum(album.id)">
                     <div class="bg-primary-50 rounded-lg mb-3 flex items-center justify-center group-hover:bg-primary-100 transition-colors overflow-hidden">
-                      @if (album.coverPhotoUrl) {
+                      @if (album.coverPhotoUrl && !isCoverImageFailed(album.coverPhotoUrl)) {
                         <img
                           [src]="album.coverPhotoUrl"
                           [alt]="album.name"
                           class="w-full h-40 object-cover rounded-lg"
+                          (error)="onCoverImageError(album.coverPhotoUrl)"
                         />
                       } @else {
                         <div class="w-full h-40 flex items-center justify-center">
@@ -279,6 +277,7 @@ export class DashboardComponent implements OnInit {
   showCreateModal = signal(false);
   newAlbumName = '';
   newAlbumDescription = '';
+  failedCoverImages = signal<Set<string>>(new Set());
 
   ngOnInit() {
     console.log('Dashboard initializing...');
@@ -386,7 +385,7 @@ export class DashboardComponent implements OnInit {
 
   navigateToAlbum(albumId: string) {
     // Navigate to album view using Angular Router
-    this.router.navigate(['/albums', albumId]);
+    this.router.navigate(['/app/albums', albumId]);
   }
 
   // Invitation handling methods
@@ -416,5 +415,16 @@ export class DashboardComponent implements OnInit {
     } catch (error) {
       console.error('Error declining invitation:', error);
     }
+  }
+
+  onCoverImageError(coverPhotoUrl: string) {
+    const current = this.failedCoverImages();
+    const updated = new Set(current);
+    updated.add(coverPhotoUrl);
+    this.failedCoverImages.set(updated);
+  }
+
+  isCoverImageFailed(coverPhotoUrl: string): boolean {
+    return this.failedCoverImages().has(coverPhotoUrl);
   }
 }

@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal, HostListener, effect } from '@angular/core';
+import { AlbumMembersComponent } from './album-members.component';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AlbumService } from '../../services/album.service';
@@ -6,15 +6,14 @@ import { AuthService } from '../../services/auth.service';
 import { InvitationService } from '../../services/invitation.service';
 import { Album, Photo, User, AlbumInvitation } from '../../models/interfaces';
 import { NavbarComponent } from '../shared/navbar-new.component';
-import { AlbumMembersComponent } from './album-members.component';
+import { Component, OnInit, inject, signal, effect, HostListener } from '@angular/core';
+
 
 @Component({
   selector: 'app-album-detail',
   standalone: true,
   imports: [CommonModule, NavbarComponent, AlbumMembersComponent],
   template: `
-    <app-navbar></app-navbar>
-    
     <div class="min-h-screen bg-beige-50">
       @if (album()) {
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -219,13 +218,22 @@ import { AlbumMembersComponent } from './album-members.component';
                   <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                     @for (photo of photos(); track photo.id) {
                       <div class="group relative aspect-square">
-                        <img
-                          [src]="photo.downloadURL"
-                          [alt]="photo.caption || 'Album photo'"
-                          class="w-full h-full object-cover rounded-lg cursor-pointer hover:shadow-lg transition-shadow"
-                          (click)="openPhotoModal(photo)"
-                          loading="lazy"
-                        />
+                        @if (photo.downloadURL && !isPhotoFailed(photo.downloadURL)) {
+                          <img
+                            [src]="photo.downloadURL"
+                            [alt]="photo.caption || 'Album photo'"
+                            class="w-full h-full object-cover rounded-lg cursor-pointer hover:shadow-lg transition-shadow"
+                            (click)="openPhotoModal(photo)"
+                            (error)="onPhotoError(photo.downloadURL)"
+                            loading="lazy"
+                          />
+                        } @else {
+                          <div class="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                            </svg>
+                          </div>
+                        }
                         
                         <!-- Photo Actions Overlay -->
                       </div>
@@ -371,11 +379,20 @@ import { AlbumMembersComponent } from './album-members.component';
 
           <!-- Photo Container -->
           <div class="flex-1 flex items-center justify-center relative">
-            <img
-              [src]="selectedPhoto()!.downloadURL"
-              [alt]="selectedPhoto()!.caption || 'Photo'"
-              class="max-w-full max-h-[70vh] object-contain rounded-lg shadow-2xl"
-            />
+            @if (selectedPhoto()!.downloadURL && !isPhotoFailed(selectedPhoto()!.downloadURL)) {
+              <img
+                [src]="selectedPhoto()!.downloadURL"
+                [alt]="selectedPhoto()!.caption || 'Photo'"
+                class="max-w-full max-h-[70vh] object-contain rounded-lg shadow-2xl"
+                (error)="onPhotoError(selectedPhoto()!.downloadURL)"
+              />
+            } @else {
+              <div class="bg-gray-100 rounded-lg flex items-center justify-center w-64 h-64 shadow-2xl">
+                <svg class="w-16 h-16 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                </svg>
+              </div>
+            }
             
             <!-- Keyboard navigation hints -->
             @if (photos().length > 1) {
@@ -475,6 +492,7 @@ export class AlbumDetailComponent implements OnInit {
   uploaderNames = signal<Map<string, string>>(new Map()); // Cache for uploader names
   pendingInvites = signal<AlbumInvitation[]>([]);
   activeTab = signal<'photos' | 'members' | 'invites'>('photos'); // Add active tab signal
+  failedPhotoUrls = signal<Set<string>>(new Set());
 
   constructor() {
     // Update uploader names when photos change
@@ -764,7 +782,7 @@ export class AlbumDetailComponent implements OnInit {
     if (confirm(`Are you sure you want to delete "${album.name}"? This action cannot be undone.`)) {
       const success = await this.albumService.deleteAlbum(album.id);
       if (success) {
-        this.router.navigate(['/albums']);
+        this.router.navigate(['/app/albums']);
       } else {
         alert('Failed to delete album. Please try again.');
       }
@@ -852,5 +870,16 @@ export class AlbumDetailComponent implements OnInit {
         event.preventDefault();
         break;
     }
+  }
+
+  onPhotoError(photoUrl: string) {
+    const current = this.failedPhotoUrls();
+    const updated = new Set(current);
+    updated.add(photoUrl);
+    this.failedPhotoUrls.set(updated);
+  }
+
+  isPhotoFailed(photoUrl: string): boolean {
+    return this.failedPhotoUrls().has(photoUrl);
   }
 }
