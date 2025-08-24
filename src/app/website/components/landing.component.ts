@@ -1,34 +1,112 @@
-import { Component, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, signal, ElementRef, ViewChild, AfterViewInit, OnDestroy, Inject, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { trigger, state, style, transition, animate, query, stagger } from '@angular/animations';
+
+interface Founder {
+  name: string;
+  role: string;
+  bio: string;
+  image?: string;
+  imageError?: boolean;
+}
 
 @Component({
   selector: 'app-landing',
   standalone: true,
   imports: [CommonModule, RouterLink, ReactiveFormsModule],
+  animations: [
+    trigger('fadeInUp', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'translateY(30px)' }),
+        animate('600ms ease-out', style({ opacity: 1, transform: 'translateY(0)' }))
+      ])
+    ]),
+    trigger('slideInLeft', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'translateX(-50px)' }),
+        animate('800ms ease-out', style({ opacity: 1, transform: 'translateX(0)' }))
+      ])
+    ]),
+    trigger('slideInRight', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'translateX(50px)' }),
+        animate('800ms ease-out', style({ opacity: 1, transform: 'translateX(0)' }))
+      ])
+    ]),
+    trigger('staggerIn', [
+      transition('* => *', [
+        query(':enter', [
+          style({ opacity: 0, transform: 'translateY(20px)' }),
+          stagger(200, [
+            animate('500ms ease-out', style({ opacity: 1, transform: 'translateY(0)' }))
+          ])
+        ], { optional: true })
+      ])
+    ]),
+    trigger('scaleIn', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'scale(0.8)' }),
+        animate('600ms ease-out', style({ opacity: 1, transform: 'scale(1)' }))
+      ])
+    ]),
+    trigger('bounceIn', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'scale(0.3)' }),
+        animate('600ms cubic-bezier(0.175, 0.885, 0.32, 1.275)', style({ opacity: 1, transform: 'scale(1)' }))
+      ])
+    ]),
+    trigger('zoomIn', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'scale(0.5) rotate(-10deg)' }),
+        animate('800ms cubic-bezier(0.25, 0.46, 0.45, 0.94)', 
+          style({ opacity: 1, transform: 'scale(1) rotate(0deg)' }))
+      ])
+    ]),
+    trigger('slideUp', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'translateY(100px)' }),
+        animate('1000ms cubic-bezier(0.25, 0.46, 0.45, 0.94)', 
+          style({ opacity: 1, transform: 'translateY(0)' }))
+      ])
+    ]),
+    trigger('flipIn', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'rotateY(90deg)' }),
+        animate('800ms ease-out', style({ opacity: 1, transform: 'rotateY(0deg)' }))
+      ])
+    ]),
+    trigger('elasticIn', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'scale(0.1)' }),
+        animate('1000ms cubic-bezier(0.68, -0.55, 0.265, 1.55)', 
+          style({ opacity: 1, transform: 'scale(1)' }))
+      ])
+    ])
+  ],
   template: `
     <!-- Navigation -->
-    <nav class="fixed w-full top-0 z-50 bg-white/90 backdrop-blur-md shadow-sm">
+    <nav class="fixed w-full top-0 z-50 bg-white/90 backdrop-blur-md shadow-sm" @slideUp>
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
-          <div class="flex items-center">
+          <div class="flex items-center" @slideInLeft>
             <img src="assets/icons/Memorabilia.png" alt="Memoravilla" class="h-40 w-auto mr-2">
-            <span class="text-2xl font-bold text-primary-900">Memoravilla</span>
+            <!-- <span class="text-2xl font-bold text-primary-900 animate-text-gradient">Memoravilla</span> -->
           </div>
-          <div class="hidden md:flex items-center space-x-8">
-            <a href="#features" class="text-gray-700 hover:text-primary-600 transition-colors">Features</a>
-            <a href="#demo" class="text-gray-700 hover:text-primary-600 transition-colors">Demo</a>
-            <a href="#founders" class="text-gray-700 hover:text-primary-600 transition-colors">About</a>
-            <a href="#pricing" class="text-gray-700 hover:text-primary-600 transition-colors">Pricing</a>
-            <a href="#contact" class="text-gray-700 hover:text-primary-600 transition-colors">Contact</a>
-            <a routerLink="/auth/login" class="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors">
+          <div class="hidden md:flex items-center space-x-8" @slideInRight>
+            <a href="#features" class="text-gray-700 hover:text-primary-600 transition-all duration-300 hover:scale-105">Features</a>
+            <a href="#demo" class="text-gray-700 hover:text-primary-600 transition-all duration-300 hover:scale-105">Demo</a>
+            <a href="#founders" class="text-gray-700 hover:text-primary-600 transition-all duration-300 hover:scale-105">About</a>
+            <a href="#pricing" class="text-gray-700 hover:text-primary-600 transition-all duration-300 hover:scale-105">Pricing</a>
+            <a href="#contact" class="text-gray-700 hover:text-primary-600 transition-all duration-300 hover:scale-105">Contact</a>
+            <a routerLink="/auth/login" class="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-all duration-300 transform hover:scale-105 hover:shadow-lg animate-bounce-gentle">
               Sign In
             </a>
           </div>
           <!-- Mobile menu button -->
-          <div class="md:hidden">
-            <button (click)="toggleMobileMenu()" class="text-gray-700">
+          <div class="md:hidden" @bounceIn>
+            <button (click)="toggleMobileMenu()" class="text-gray-700 hover:scale-110 transition-transform duration-200">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
               </svg>
@@ -37,7 +115,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
         </div>
         <!-- Mobile menu -->
         @if (showMobileMenu()) {
-          <div class="md:hidden border-t border-gray-200 py-4">
+          <div class="md:hidden border-t border-gray-200 py-4" @slideUp>
             <div class="flex flex-col space-y-4">
               <a href="#features" class="text-gray-700 hover:text-primary-600 transition-colors">Features</a>
               <a href="#demo" class="text-gray-700 hover:text-primary-600 transition-colors">Demo</a>
@@ -54,49 +132,53 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
     </nav>
 
     <!-- Jumbotron -->
-    <section class="pt-20 pb-16 bg-gradient-to-br from-primary-50 to-white">
+    <section class="pt-32 pb-16 bg-gradient-to-br from-primary-50 to-white overflow-hidden">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center">
-          <h1 class="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
-            Welcome to <span class="text-primary-600">Memoravilla</span>
+        <div class="text-center pt-20" @elasticIn>
+          <h1 class="text-5xl md:text-6xl font-bold text-gray-900 mb-6 animate-text-gradient animate-fade-in">
+            Welcome to <span class="text-primary-600 animate-pulse-glow animate-text-shine">Memoravilla</span>
           </h1>
-          <p class="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto">
+          <p class="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto animate-fade-in-delay-1" @fadeInUp>
             Preserve, organize, and share your precious memories with family and friends. 
             Create beautiful photo albums that tell your story and last forever.
           </p>
-          <div class="flex flex-col sm:flex-row gap-4 justify-center">
-            <a routerLink="/auth/register" class="bg-primary-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-primary-700 transition-colors">
+          <div class="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-delay-2" @slideInLeft>
+            <a routerLink="/auth/register" class="bg-primary-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-primary-700 transition-all duration-300 transform hover:scale-105 hover:shadow-lg animate-bounce-gentle hover:animate-wiggle">
               Get Started Free
             </a>
-            <a routerLink="/auth/login" class="border-2 border-primary-600 text-primary-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-primary-600 hover:text-white transition-colors">
+            <a routerLink="/auth/login" class="border-2 border-primary-600 text-primary-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-primary-600 hover:text-white transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:animate-wiggle">
               Sign In
             </a>
           </div>
         </div>
-        <div class="mt-16 relative">
-          <div class="bg-white rounded-xl shadow-2xl overflow-hidden">
+        <div class="mt-16 relative" @zoomIn>
+          <div class="bg-white rounded-xl shadow-2xl overflow-hidden transform hover:scale-105 transition-transform duration-500 animate-float hover:shadow-3xl">
             <div class="bg-gray-100 px-4 py-3 flex items-center space-x-2">
-              <div class="w-3 h-3 bg-red-500 rounded-full"></div>
-              <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
-              <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+              <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse animate-glow"></div>
+              <div class="w-3 h-3 bg-yellow-500 rounded-full animate-pulse animate-glow" style="animation-delay: 0.2s"></div>
+              <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse animate-glow" style="animation-delay: 0.4s"></div>
             </div>
             <div class="p-8">
-              <div class="grid grid-cols-3 gap-4">
-                <div class="bg-primary-100 rounded-lg p-4 text-center">
-                  <div class="w-full h-24 bg-primary-200 rounded mb-2"></div>
-                  <p class="text-sm text-primary-700 font-medium">Family Vacation</p>
+              <div class="grid grid-cols-3 gap-4" @staggerIn>
+                <div class="bg-primary-100 rounded-lg p-4 text-center transform hover:scale-110 transition-all duration-300 cursor-pointer hover:rotate-3 hover:shadow-lg group">
+                  <div class="w-full h-24 bg-primary-200 rounded mb-2 animate-shimmer group-hover:animate-pulse-fast"></div>
+                  <p class="text-sm text-primary-700 font-medium group-hover:text-primary-800">Family Vacation</p>
                 </div>
-                <div class="bg-green-100 rounded-lg p-4 text-center">
-                  <div class="w-full h-24 bg-green-200 rounded mb-2"></div>
-                  <p class="text-sm text-green-700 font-medium">Wedding Album</p>
+                <div class="bg-green-100 rounded-lg p-4 text-center transform hover:scale-110 transition-all duration-300 cursor-pointer hover:-rotate-3 hover:shadow-lg group">
+                  <div class="w-full h-24 bg-green-200 rounded mb-2 animate-shimmer group-hover:animate-pulse-fast" style="animation-delay: 0.2s"></div>
+                  <p class="text-sm text-green-700 font-medium group-hover:text-green-800">Wedding Album</p>
                 </div>
-                <div class="bg-purple-100 rounded-lg p-4 text-center">
-                  <div class="w-full h-24 bg-purple-200 rounded mb-2"></div>
-                  <p class="text-sm text-purple-700 font-medium">Baby's First Year</p>
+                <div class="bg-purple-100 rounded-lg p-4 text-center transform hover:scale-110 transition-all duration-300 cursor-pointer hover:rotate-3 hover:shadow-lg group">
+                  <div class="w-full h-24 bg-purple-200 rounded mb-2 animate-shimmer group-hover:animate-pulse-fast" style="animation-delay: 0.4s"></div>
+                  <p class="text-sm text-purple-700 font-medium group-hover:text-purple-800">Baby's First Year</p>
                 </div>
               </div>
             </div>
           </div>
+          <!-- Floating elements for visual interest -->
+          <div class="absolute -top-4 -left-4 w-8 h-8 bg-primary-200 rounded-full animate-bounce opacity-60" style="animation-delay: 1s; animation-duration: 3s;"></div>
+          <div class="absolute -top-2 -right-6 w-6 h-6 bg-green-200 rounded-full animate-bounce opacity-60" style="animation-delay: 2s; animation-duration: 4s;"></div>
+          <div class="absolute -bottom-3 left-8 w-4 h-4 bg-purple-200 rounded-full animate-bounce opacity-60" style="animation-delay: 0.5s; animation-duration: 2.5s;"></div>
         </div>
       </div>
     </section>
@@ -104,22 +186,25 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
     <!-- Features -->
     <section id="features" class="py-16 bg-white">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-16">
-          <h2 class="text-4xl font-bold text-gray-900 mb-4">Powerful Features</h2>
-          <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+        <div class="text-center mb-16" @bounceIn>
+          <h2 class="text-4xl font-bold text-gray-900 mb-4 animate-text-gradient">Powerful Features</h2>
+          <p class="text-xl text-gray-600 max-w-2xl mx-auto animate-fade-in-up">
             Everything you need to organize, share, and preserve your memories
           </p>
         </div>
         
-        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          @for (feature of features; track feature.title) {
-            <div class="bg-white p-8 rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
-              <div class="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mb-4">
-                <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" [innerHTML]="feature.icon">
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8" @staggerIn>
+          @for (feature of features; track feature.title; let i = $index) {
+            <div class="bg-white p-8 rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 hover:scale-105 animate-fade-in-up group cursor-pointer hover:rotate-1 hover:bg-gradient-to-br hover:from-white hover:to-gray-50"
+                 [style.animation-delay]="(i * 100) + 'ms'" @flipIn>
+              <div class="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-primary-200 transition-all duration-300 animate-bounce-on-hover group-hover:rotate-12 group-hover:scale-110">
+                <svg class="w-6 h-6 text-primary-600 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" [innerHTML]="feature.icon">
                 </svg>
               </div>
-              <h3 class="text-xl font-semibold text-gray-900 mb-3">{{ feature.title }}</h3>
-              <p class="text-gray-600">{{ feature.description }}</p>
+              <h3 class="text-xl font-semibold text-gray-900 mb-3 group-hover:text-primary-600 transition-colors duration-300 group-hover:animate-pulse">{{ feature.title }}</h3>
+              <p class="text-gray-600 group-hover:text-gray-700 transition-colors duration-300">{{ feature.description }}</p>
+              <!-- Decorative elements -->
+              <div class="absolute top-2 right-2 w-2 h-2 bg-primary-200 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-ping"></div>
             </div>
           }
         </div>
@@ -129,51 +214,66 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
     <!-- Albums Demo -->
     <section id="demo" class="py-16 bg-gray-50">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-16">
-          <h2 class="text-4xl font-bold text-gray-900 mb-4">See How Albums Work</h2>
+        <div class="text-center mb-16" @fadeInUp>
+          <h2 class="text-4xl font-bold text-gray-900 mb-4 animate-text-gradient">See How Albums Work</h2>
           <p class="text-xl text-gray-600 max-w-2xl mx-auto">
             Create, organize, and share your photo albums with ease
           </p>
         </div>
 
         <div class="grid lg:grid-cols-2 gap-12 items-center">
-          <div>
+          <div @slideInLeft>
             <div class="space-y-8">
-              @for (step of demoSteps; track step.step) {
-                <div class="flex items-start space-x-4">
-                  <div class="flex-shrink-0 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-semibold">
+              @for (step of demoSteps; track step.step; let i = $index) {
+                <div class="flex items-start space-x-4 animate-fade-in-up group cursor-pointer hover:bg-white hover:rounded-lg hover:p-4 hover:shadow-md transition-all duration-300" 
+                     [style.animation-delay]="(i * 150) + 'ms'" @bounceIn>
+                  <div class="flex-shrink-0 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-semibold group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300 animate-pulse-glow group-hover:animate-bounce">
                     {{ step.step }}
                   </div>
-                  <div>
-                    <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ step.title }}</h3>
-                    <p class="text-gray-600">{{ step.description }}</p>
+                  <div class="group-hover:transform group-hover:translate-x-2 transition-transform duration-300">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2 group-hover:text-primary-600 transition-colors duration-300 group-hover:animate-pulse">{{ step.title }}</h3>
+                    <p class="text-gray-600 group-hover:text-gray-700">{{ step.description }}</p>
+                  </div>
+                  <!-- Animated arrow -->
+                  <div class="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <svg class="w-5 h-5 text-primary-400 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
                   </div>
                 </div>
               }
             </div>
           </div>
           
-          <div class="relative">
-            <div class="bg-white rounded-xl shadow-2xl overflow-hidden">
-              <div class="bg-primary-600 px-6 py-4">
+          <div class="relative" @zoomIn>
+            <div class="bg-white rounded-xl shadow-2xl overflow-hidden transform hover:scale-105 transition-all duration-500 animate-float hover:shadow-3xl relative">
+              <div class="bg-primary-600 px-6 py-4 animate-gradient relative overflow-hidden">
                 <h3 class="text-white font-semibold">My Photo Albums</h3>
+                <!-- Animated background pattern -->
+                <div class="absolute inset-0 opacity-10">
+                  <div class="w-full h-full bg-gradient-to-r from-transparent via-white to-transparent transform -skew-x-12 animate-slide-across"></div>
+                </div>
               </div>
               <div class="p-6">
-                <div class="grid grid-cols-2 gap-4">
-                  <div class="bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg p-4 aspect-square flex items-center justify-center">
-                    <span class="text-blue-700 font-medium text-sm">Summer 2024</span>
+                <div class="grid grid-cols-2 gap-4" @staggerIn>
+                  <div class="bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg p-4 aspect-square flex items-center justify-center transform hover:scale-110 transition-all duration-300 cursor-pointer animate-shimmer hover:rotate-3 hover:shadow-lg group">
+                    <span class="text-blue-700 font-medium text-sm group-hover:text-blue-800 group-hover:scale-105 transition-all duration-300">Summer 2024</span>
                   </div>
-                  <div class="bg-gradient-to-br from-pink-100 to-pink-200 rounded-lg p-4 aspect-square flex items-center justify-center">
-                    <span class="text-pink-700 font-medium text-sm">Wedding</span>
+                  <div class="bg-gradient-to-br from-pink-100 to-pink-200 rounded-lg p-4 aspect-square flex items-center justify-center transform hover:scale-110 transition-all duration-300 cursor-pointer animate-shimmer hover:-rotate-3 hover:shadow-lg group" style="animation-delay: 0.2s">
+                    <span class="text-pink-700 font-medium text-sm group-hover:text-pink-800 group-hover:scale-105 transition-all duration-300">Wedding</span>
                   </div>
-                  <div class="bg-gradient-to-br from-green-100 to-green-200 rounded-lg p-4 aspect-square flex items-center justify-center">
-                    <span class="text-green-700 font-medium text-sm">Baby Photos</span>
+                  <div class="bg-gradient-to-br from-green-100 to-green-200 rounded-lg p-4 aspect-square flex items-center justify-center transform hover:scale-110 transition-all duration-300 cursor-pointer animate-shimmer hover:rotate-3 hover:shadow-lg group" style="animation-delay: 0.4s">
+                    <span class="text-green-700 font-medium text-sm group-hover:text-green-800 group-hover:scale-105 transition-all duration-300">Baby Photos</span>
                   </div>
-                  <div class="bg-gradient-to-br from-purple-100 to-purple-200 rounded-lg p-4 aspect-square flex items-center justify-center">
-                    <span class="text-purple-700 font-medium text-sm">Graduation</span>
+                  <div class="bg-gradient-to-br from-purple-100 to-purple-200 rounded-lg p-4 aspect-square flex items-center justify-center transform hover:scale-110 transition-all duration-300 cursor-pointer animate-shimmer hover:-rotate-3 hover:shadow-lg group" style="animation-delay: 0.6s">
+                    <span class="text-purple-700 font-medium text-sm group-hover:text-purple-800 group-hover:scale-105 transition-all duration-300">Graduation</span>
                   </div>
                 </div>
               </div>
+              <!-- Floating particles -->
+              <div class="absolute top-4 right-4 w-2 h-2 bg-yellow-400 rounded-full animate-ping opacity-70"></div>
+              <div class="absolute bottom-8 left-8 w-1.5 h-1.5 bg-green-400 rounded-full animate-ping opacity-70" style="animation-delay: 1s"></div>
+              <div class="absolute top-1/2 right-8 w-1 h-1 bg-blue-400 rounded-full animate-ping opacity-70" style="animation-delay: 2s"></div>
             </div>
           </div>
         </div>
@@ -191,14 +291,23 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
         </div>
 
         <div class="grid md:grid-cols-2 gap-12 max-w-4xl mx-auto">
-          @for (founder of founders; track founder.name) {
-            <div class="text-center">
-              <div class="w-48 h-48 mx-auto mb-6 bg-gradient-to-br from-primary-100 to-primary-200 rounded-full flex items-center justify-center">
-                <span class="text-6xl text-primary-600 font-bold">{{ getInitials(founder.name) }}</span>
+          @for (founder of founders; track founder.name; let i = $index) {
+            <div class="text-center group cursor-pointer relative">
+              <div class="w-48 h-48 mx-auto mb-6 bg-gradient-to-br from-primary-100 to-primary-200 rounded-full flex items-center justify-center transform group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 relative overflow-hidden shadow-lg group-hover:shadow-xl">
+                @if (founder.image && !founder.imageError) {
+                  <img [src]="founder.image" [alt]="founder.name" 
+                       class="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform duration-500"
+                       (error)="onImageError($event, founder)">
+                }
+                @if (!founder.image || founder.imageError) {
+                  <span class="text-6xl text-primary-600 font-bold group-hover:text-primary-700 transition-colors duration-300 group-hover:scale-110">{{ getInitials(founder.name) }}</span>
+                }
+                <!-- Animated background overlay -->
+                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
               </div>
-              <h3 class="text-2xl font-semibold text-gray-900 mb-2">{{ founder.name }}</h3>
-              <p class="text-primary-600 font-medium mb-4">{{ founder.role }}</p>
-              <p class="text-gray-600 leading-relaxed">{{ founder.bio }}</p>
+              <h3 class="text-2xl font-semibold text-gray-900 mb-2 group-hover:text-primary-600 transition-colors duration-300">{{ founder.name }}</h3>
+              <p class="text-primary-600 font-medium mb-4 group-hover:text-primary-700 transition-colors duration-300">{{ founder.role }}</p>
+              <p class="text-gray-600 leading-relaxed group-hover:text-gray-700 transition-colors duration-300">{{ founder.bio }}</p>
             </div>
           }
         </div>
@@ -216,8 +325,9 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
         </div>
 
         <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          @for (plan of pricingPlans; track plan.name) {
-            <div class="bg-white rounded-xl shadow-lg p-8 relative" [class.ring-2]="plan.featured" [class.ring-primary-600]="plan.featured">
+          @for (plan of pricingPlans; track plan.name; let i = $index) {
+            <div class="bg-white rounded-xl shadow-lg p-8 relative transform hover:scale-105 transition-all duration-300 cursor-pointer group hover:shadow-xl" 
+                 [class.ring-2]="plan.featured" [class.ring-primary-600]="plan.featured">
               @if (plan.featured) {
                 <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
                   <span class="bg-primary-600 text-white px-4 py-1 rounded-full text-sm font-medium">Most Popular</span>
@@ -225,15 +335,15 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
               }
               
               <div class="text-center">
-                <h3 class="text-2xl font-semibold text-gray-900 mb-4">{{ plan.name }}</h3>
-                <div class="mb-6">
-                  <span class="text-5xl font-bold text-gray-900">\${{ plan.price }}</span>
-                  <span class="text-gray-600">/{{ plan.period }}</span>
+                <h3 class="text-2xl font-semibold text-gray-900 mb-4 group-hover:text-primary-600 transition-colors duration-300">{{ plan.name }}</h3>
+                <div class="mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <span class="text-5xl font-bold text-gray-900 group-hover:text-primary-600 transition-colors duration-300">\${{ plan.price }}</span>
+                  <span class="text-gray-600 group-hover:text-gray-700 transition-colors duration-300">/{{ plan.period }}</span>
                 </div>
-                <p class="text-gray-600 mb-8">{{ plan.description }}</p>
+                <p class="text-gray-600 mb-8 group-hover:text-gray-700 transition-colors duration-300">{{ plan.description }}</p>
                 
                 <ul class="space-y-3 mb-8">
-                  @for (feature of plan.features; track feature) {
+                  @for (feature of plan.features; track feature; let j = $index) {
                     <li class="flex items-center">
                       <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
@@ -244,13 +354,14 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
                 </ul>
                 
                 <button 
-                  class="w-full py-3 px-6 rounded-lg font-semibold transition-colors"
+                  class="w-full py-3 px-6 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
                   [class.bg-primary-600]="plan.featured"
                   [class.text-white]="plan.featured"
                   [class.hover:bg-primary-700]="plan.featured"
                   [class.bg-gray-100]="!plan.featured"
                   [class.text-gray-900]="!plan.featured"
                   [class.hover:bg-gray-200]="!plan.featured"
+                  [class.hover:text-primary-600]="!plan.featured"
                 >
                   {{ plan.buttonText }}
                 </button>
@@ -372,7 +483,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
         <div class="grid md:grid-cols-4 gap-8">
           <div class="md:col-span-2">
             <div class="flex items-center mb-4">
-              <img src="assets/icons/Memorabilia.png" alt="Memoravilla" class="h-8 w-auto mr-2">
+              <img src="assets/icons/Memorabilia.png" alt="Memoravilla" class="h-40 w-auto mr-2">
               <h3 class="text-2xl font-bold">Memoravilla</h3>
             </div>
             <p class="text-gray-300 mb-6 max-w-md">
@@ -380,11 +491,6 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
               Share your story with those who matter most.
             </p>
             <div class="flex space-x-4">
-              <a href="#" class="text-gray-300 hover:text-white transition-colors">
-                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/>
-                </svg>
-              </a>
               <a href="#" class="text-gray-300 hover:text-white transition-colors">
                 <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M22.46 6c-.77.35-1.6.58-2.46.69.88-.53 1.56-1.37 1.88-2.38-.83.5-1.75.85-2.72 1.05C18.37 4.5 17.26 4 16 4c-2.35 0-4.27 1.92-4.27 4.29 0 .34.04.67.11.98C8.28 9.09 5.11 7.38 3 4.79c-.37.63-.58 1.37-.58 2.15 0 1.49.75 2.81 1.91 3.56-.71 0-1.37-.2-1.95-.5v.03c0 2.08 1.48 3.82 3.44 4.21a4.22 4.22 0 0 1-1.93.07 4.28 4.28 0 0 0 4 2.98 8.521 8.521 0 0 1-5.33 1.84c-.34 0-.68-.02-1.02-.06C3.44 20.29 5.7 21 8.12 21 16 21 20.33 14.46 20.33 8.79c0-.19 0-.37-.01-.56.84-.6 1.56-1.36 2.14-2.23z"/>
@@ -441,22 +547,197 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
       50% { transform: translateY(-20px); }
     }
     
-    .float-animation {
+    @keyframes shimmer {
+      0% { background-position: -200% center; }
+      100% { background-position: 200% center; }
+    }
+    
+    @keyframes bounce-gentle {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+    
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.3); }
+      50% { box-shadow: 0 0 30px rgba(99, 102, 241, 0.6); }
+    }
+    
+    @keyframes text-gradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes fade-in-up {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes slide-across {
+      0% { transform: translateX(-100%) skewX(-12deg); }
+      100% { transform: translateX(100%) skewX(-12deg); }
+    }
+    
+    @keyframes wiggle {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(-2deg); }
+      75% { transform: rotate(2deg); }
+    }
+    
+    @keyframes text-shine {
+      0% { background-position: -100% center; }
+      100% { background-position: 100% center; }
+    }
+    
+    @keyframes glow {
+      0%, 100% { box-shadow: 0 0 5px currentColor; }
+      50% { box-shadow: 0 0 20px currentColor; }
+    }
+    
+    @keyframes pulse-fast {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    
+    @keyframes bounce-on-hover {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-3px); }
+    }
+    
+    /* CSS Animation Classes */
+    .animate-float {
       animation: float 6s ease-in-out infinite;
     }
     
-    /* Gradient backgrounds */
+    .animate-shimmer {
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      background-size: 200% 100%;
+      animation: shimmer 2s infinite;
+    }
+    
+    .animate-bounce-gentle {
+      animation: bounce-gentle 2s ease-in-out infinite;
+    }
+    
+    .animate-pulse-glow {
+      animation: pulse-glow 2s ease-in-out infinite;
+    }
+    
+    .animate-text-gradient {
+      background: linear-gradient(45deg, #667eea, #764ba2, #667eea);
+      background-size: 200% 200%;
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: text-gradient 3s ease infinite;
+    }
+    
+    .animate-fade-in {
+      animation: fade-in 1s ease-out;
+    }
+    
+    .animate-fade-in-delay-1 {
+      animation: fade-in 1s ease-out 0.3s both;
+    }
+    
+    .animate-fade-in-delay-2 {
+      animation: fade-in 1s ease-out 0.6s both;
+    }
+    
+    .animate-fade-in-up {
+      animation: fade-in-up 0.8s ease-out;
+    }
+    
+    .animate-gradient {
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      background-size: 200% 200%;
+      animation: text-gradient 3s ease infinite;
+    }
+    
+    .animate-slide-across {
+      animation: slide-across 3s ease-in-out infinite;
+    }
+    
+    .animate-wiggle {
+      animation: wiggle 0.5s ease-in-out;
+    }
+    
+    .animate-text-shine {
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+      background-size: 200% 100%;
+      background-clip: text;
+      -webkit-background-clip: text;
+      animation: text-shine 2s ease-in-out infinite;
+    }
+    
+    .animate-glow {
+      animation: glow 2s ease-in-out infinite;
+    }
+    
+    .animate-pulse-fast {
+      animation: pulse-fast 1s ease-in-out infinite;
+    }
+    
+    .animate-bounce-on-hover {
+      animation: bounce-on-hover 0.6s ease-in-out infinite;
+    }
+    
+    /* Hover effects */
+    .hover\\:animate-wiggle:hover {
+      animation: wiggle 0.5s ease-in-out;
+    }
+    
+    .hover\\:shadow-3xl:hover {
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+    
+    /* Custom gradient backgrounds */
     .gradient-bg {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     }
+    
+    /* Intersection observer animations */
+    .scroll-animation {
+      opacity: 0;
+      transform: translateY(50px);
+      transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+    }
+    
+    .scroll-animation.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    
+    /* Enhanced transitions */
+    * {
+      transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
+    }
+    
+    /* Responsive animation controls */
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
   `]
 })
-export class LandingComponent implements OnInit {
+export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   showMobileMenu = signal(false);
   isSubmitting = signal(false);
   showSuccessMessage = signal(false);
   
   contactForm: FormGroup;
+  private observer?: IntersectionObserver;
 
   features = [
     {
@@ -514,16 +795,18 @@ export class LandingComponent implements OnInit {
     }
   ];
 
-  founders = [
+  founders: Founder[] = [
     {
       name: 'Seiji Villafranca',
       role: 'Co-Founder & CEO',
-      bio: 'Passionate about preserving memories and building meaningful connections through technology. Seiji leads the vision and strategy at Memoravilla with a focus on user experience and innovation.'
+      bio: 'A Tech enthusiast and visionary, Seiji leads Memoravilla with a passion for innovation and user-centric design. He is committed to creating a platform that truly resonates with families worldwide.',
+      image: 'assets/profile/seiji-profile.jpeg'
     },
     {
-      name: 'Michelle Mamaid',
-      role: 'Co-Founder & CTO',
-      bio: 'Technology enthusiast with a love for creating beautiful, functional applications. Michelle oversees the technical development and ensures Memoravilla is built with the highest quality standards.'
+      name: 'Michelle Villafranca',
+      role: 'Co-Founder',
+      bio: 'Quality-driven and detail-oriented, Michelle ensures that every aspect of Memoravilla meets the highest standards. She is dedicated on quality assurance and customer satisfaction.',
+      image: 'assets/profile/michelle-profile.jpeg'
     }
   ];
 
@@ -577,7 +860,10 @@ export class LandingComponent implements OnInit {
     }
   ];
 
-  constructor(private fb: FormBuilder) {
+  constructor(
+    private fb: FormBuilder,
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) {
     this.contactForm = this.fb.group({
       name: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
@@ -588,17 +874,84 @@ export class LandingComponent implements OnInit {
 
   ngOnInit() {
     // Add smooth scroll behavior to anchor links
-    document.addEventListener('DOMContentLoaded', () => {
-      const links = document.querySelectorAll('a[href^="#"]');
-      links.forEach(link => {
-        link.addEventListener('click', (e) => {
-          e.preventDefault();
-          const targetId = link.getAttribute('href')?.substring(1);
-          const targetElement = document.getElementById(targetId || '');
-          if (targetElement) {
-            targetElement.scrollIntoView({ behavior: 'smooth' });
+    if (isPlatformBrowser(this.platformId)) {
+      document.addEventListener('DOMContentLoaded', () => {
+        const links = document.querySelectorAll('a[href^="#"]');
+        links.forEach(link => {
+          link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const targetId = link.getAttribute('href')?.substring(1);
+            const targetElement = document.getElementById(targetId || '');
+            if (targetElement) {
+              targetElement.scrollIntoView({ behavior: 'smooth' });
+            }
+          });
+        });
+      });
+    }
+  }
+
+  ngAfterViewInit() {
+    if (isPlatformBrowser(this.platformId)) {
+      this.setupIntersectionObserver();
+      this.addParallaxEffect();
+    }
+  }
+
+  ngOnDestroy() {
+    if (this.observer) {
+      this.observer.disconnect();
+    }
+  }
+
+  private setupIntersectionObserver() {
+    this.observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            // Add staggered animation delays for children
+            const children = entry.target.querySelectorAll('.stagger-child');
+            children.forEach((child, index) => {
+              setTimeout(() => {
+                child.classList.add('visible');
+              }, index * 100);
+            });
           }
         });
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+      }
+    );
+
+    // Observe all sections for scroll animations
+    const sections = document.querySelectorAll('section');
+    sections.forEach(section => {
+      section.classList.add('scroll-animation');
+      this.observer?.observe(section);
+    });
+
+    // Observe feature cards and other elements
+    const animatedElements = document.querySelectorAll(
+      '.animate-fade-in-up, .feature-card, .demo-step, .founder-card, .pricing-card'
+    );
+    animatedElements.forEach(element => {
+      element.classList.add('scroll-animation');
+      this.observer?.observe(element);
+    });
+  }
+
+  private addParallaxEffect() {
+    window.addEventListener('scroll', () => {
+      const scrolled = window.pageYOffset;
+      const parallax = document.querySelectorAll('.parallax-element');
+      
+      parallax.forEach((element, index) => {
+        const speed = 0.5 + (index * 0.1);
+        const yPos = -(scrolled * speed);
+        (element as HTMLElement).style.transform = `translate3d(0, ${yPos}px, 0)`;
       });
     });
   }
@@ -638,5 +991,14 @@ export class LandingComponent implements OnInit {
         this.isSubmitting.set(false);
       }
     }
+  }
+
+  onImageError(event: Event, founder: Founder) {
+    // Hide the image and show initials fallback
+    const imgElement = event.target as HTMLImageElement;
+    imgElement.style.display = 'none';
+    
+    // Mark this founder as having a failed image so we can show initials
+    founder.imageError = true;
   }
 }

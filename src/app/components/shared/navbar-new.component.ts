@@ -19,7 +19,7 @@ import { effect } from '@angular/core';
           <div class="flex items-center">
             <a routerLink="/app/dashboard" class="flex items-center">
               <img src="assets/icons/Memorabilia.png" alt="Memoravilla" class="h-40 w-auto mr-2">
-              <span class="text-2xl font-bold text-primary-900">Memoravilla</span>
+              <!-- <span class="text-2xl font-bold text-primary-900">Memoravilla</span> -->
             </a>
           </div>
 
