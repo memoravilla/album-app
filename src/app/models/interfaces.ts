@@ -5,6 +5,23 @@ export interface User {
   photoURL?: string;
   bio?: string;
   createdAt: Date;
+  planType: 'basic' | 'pro' | 'premium';
+  planExpiresAt?: Date; // For pro/premium subscriptions
+}
+
+export interface PlanFeatures {
+  name: string;
+  displayName: string;
+  price: number;
+  currency: string;
+  billingPeriod: 'monthly' | 'yearly';
+  maxAlbums: number;
+  maxPhotosPerAlbum: number;
+  maxStorageGB: number;
+  hasAdvancedSharing: boolean;
+  hasCustomThemes: boolean;
+  hasPrioritySupport: boolean;
+  hasAdvancedAnalytics: boolean;
 }
 
 export interface Album {

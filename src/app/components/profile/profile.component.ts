@@ -4,14 +4,14 @@ import { updateProfile } from '@angular/fire/auth';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
-import { NavbarComponent } from '../shared/navbar-new.component';
 import { Component, effect, inject, OnInit, signal } from '@angular/core';
 import { from } from 'rxjs';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, FormsModule, NavbarComponent],
+  imports: [CommonModule, FormsModule],
   template: `
     <div class="min-h-screen bg-beige-50">
       <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -202,6 +202,33 @@ import { from } from 'rxjs';
                       <label class="block text-sm font-medium text-primary-700 mb-1">Member Since</label>
                       <p class="text-primary-900">{{ formatDate(currentUser()?.createdAt) }}</p>
                     </div>
+
+                    <div>
+                      <label class="block text-sm font-medium text-primary-700 mb-1">Current Plan</label>
+                      <div class="flex items-center space-x-3">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
+                              [ngClass]="{
+                                'bg-gray-100 text-gray-700': currentUser()?.planType === 'basic',
+                                'bg-blue-100 text-blue-700': currentUser()?.planType === 'pro',
+                                'bg-purple-100 text-purple-700': currentUser()?.planType === 'premium'
+                              }">
+                          {{ getPlanDisplayName() }} Plan
+                        </span>
+                        @if (currentUser()?.planType === 'basic') {
+                          <button
+                            (click)="upgradePlan()"
+                            class="text-xs px-2 py-1 bg-amber-100 text-amber-700 rounded-full hover:bg-amber-200 transition-colors"
+                          >
+                            Upgrade
+                          </button>
+                        }
+                      </div>
+                      @if (currentUser()?.planExpiresAt && currentUser()?.planType !== 'basic') {
+                        <p class="text-xs text-gray-500 mt-1">
+                          Expires {{ formatDate(currentUser()?.planExpiresAt) }}
+                        </p>
+                      }
+                    </div>
                   </div>
 
                   <div>
@@ -334,6 +361,7 @@ import { from } from 'rxjs';
 export class ProfileComponent implements OnInit {
   private authService = inject(AuthService);
   private storage = inject(Storage);
+  private router = inject(Router);
 
   currentUser = this.authService.currentUser;
   isEditing = signal(false);
@@ -576,6 +604,18 @@ export class ProfileComponent implements OnInit {
       console.error('Error formatting date:', error, date);
       return 'Invalid date';
     }
+  }
+
+  getPlanDisplayName(): string {
+    const user = this.currentUser();
+    if (!user || !user.planType) return 'Basic';
+    
+    return user.planType.charAt(0).toUpperCase() + user.planType.slice(1);
+  }
+
+  upgradePlan() {
+    // Navigate to the upgrade page
+    this.router.navigate(['/app/upgrade']);
   }
 
   private clearMessages() {

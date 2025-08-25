@@ -57,6 +57,10 @@ export const routes: Routes = [
         loadComponent: () => import('./components/profile/profile.component').then(m => m.ProfileComponent)
       },
       {
+        path: 'upgrade',
+        loadComponent: () => import('./components/upgrade/upgrade.component').then(m => m.UpgradeComponent)
+      },
+      {
         path: 'debug',
         loadComponent: () => import('./components/debug/debug.component').then(m => m.DebugComponent)
       }

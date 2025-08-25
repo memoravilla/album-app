@@ -17,7 +17,7 @@ import {
 } from '@angular/fire/auth';
 import { Firestore, doc, setDoc, getDoc, updateDoc } from '@angular/fire/firestore';
 import { Router } from '@angular/router';
-import { User } from '../models/interfaces';
+import { User, PlanFeatures } from '../models/interfaces';
 
 @Injectable({
   providedIn: 'root'
@@ -64,7 +64,8 @@ export class AuthService {
                 email: firebaseUser.email || '',
                 displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || '',
                 photoURL: firebaseUser.photoURL || undefined,
-                createdAt: new Date()
+                createdAt: new Date(),
+                planType: 'basic' // Default to basic plan
               };
               this.currentUser.set(fallbackUser);
               console.log('✅ Using fallback user data:', fallbackUser.displayName);
@@ -77,7 +78,8 @@ export class AuthService {
               email: firebaseUser.email || '',
               displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || '',
               photoURL: firebaseUser.photoURL || undefined,
-              createdAt: new Date()
+              createdAt: new Date(),
+              planType: 'basic' // Default to basic plan
             };
             this.currentUser.set(fallbackUser);
             console.log('⚠️ Set fallback user despite Firestore error');
@@ -316,6 +318,113 @@ export class AuthService {
     }
   }
 
+  // Plan management methods
+  async updateUserPlan(planType: 'basic' | 'pro' | 'premium', planExpiresAt?: Date): Promise<void> {
+    const user = this.currentUser();
+    if (!user) {
+      throw new Error('User must be authenticated to update plan');
+    }
+
+    try {
+      const userRef = doc(this.firestore, `users/${user.uid}`);
+      const updateData: Partial<User> = { 
+        planType,
+        planExpiresAt
+      };
+      
+      await updateDoc(userRef, updateData);
+      
+      // Update the current user signal
+      this.currentUser.set({
+        ...user,
+        planType,
+        planExpiresAt
+      });
+      
+      console.log('✅ User plan updated successfully:', planType);
+    } catch (error) {
+      console.error('❌ Error updating user plan:', error);
+      throw error;
+    }
+  }
+
+  getPlanFeatures(planType: 'basic' | 'pro' | 'premium'): PlanFeatures {
+    const planFeatures: Record<string, PlanFeatures> = {
+      basic: {
+        name: 'basic',
+        displayName: 'Basic',
+        price: 0,
+        currency: 'USD',
+        billingPeriod: 'monthly',
+        maxAlbums: 5,
+        maxPhotosPerAlbum: 100,
+        maxStorageGB: 1,
+        hasAdvancedSharing: false,
+        hasCustomThemes: false,
+        hasPrioritySupport: false,
+        hasAdvancedAnalytics: false
+      },
+      pro: {
+        name: 'pro',
+        displayName: 'Pro',
+        price: 9.99,
+        currency: 'USD',
+        billingPeriod: 'monthly',
+        maxAlbums: 25,
+        maxPhotosPerAlbum: 1000,
+        maxStorageGB: 10,
+        hasAdvancedSharing: true,
+        hasCustomThemes: true,
+        hasPrioritySupport: false,
+        hasAdvancedAnalytics: true
+      },
+      premium: {
+        name: 'premium',
+        displayName: 'Premium',
+        price: 19.99,
+        currency: 'USD',
+        billingPeriod: 'monthly',
+        maxAlbums: -1, // Unlimited
+        maxPhotosPerAlbum: -1, // Unlimited
+        maxStorageGB: 100,
+        hasAdvancedSharing: true,
+        hasCustomThemes: true,
+        hasPrioritySupport: true,
+        hasAdvancedAnalytics: true
+      }
+    };
+
+    return planFeatures[planType];
+  }
+
+  isPlanActive(): boolean {
+    const user = this.currentUser();
+    if (!user) return false;
+
+    // Basic plan is always active
+    if (user.planType === 'basic') return true;
+
+    // For paid plans, check expiration
+    if (user.planExpiresAt) {
+      return new Date() < new Date(user.planExpiresAt);
+    }
+
+    return false;
+  }
+
+  getPlanDisplayInfo(): { displayName: string; color: string; badge: string } {
+    const user = this.currentUser();
+    if (!user) return { displayName: 'Basic', color: 'gray', badge: 'B' };
+
+    const planInfo = {
+      basic: { displayName: 'Basic', color: 'gray', badge: 'B' },
+      pro: { displayName: 'Pro', color: 'blue', badge: 'P' },
+      premium: { displayName: 'Premium', color: 'purple', badge: 'PR' }
+    };
+
+    return planInfo[user.planType];
+  }
+
   private async createUserDocument(firebaseUser: FirebaseUser, displayName: string): Promise<User> {
     try {
       const userRef = doc(this.firestore, `users/${firebaseUser.uid}`);
@@ -329,7 +438,8 @@ export class AuthService {
         email: firebaseUser.email || '',
         displayName: displayName,
         photoURL: firebaseUser.photoURL || undefined,
-        createdAt: new Date()
+        createdAt: new Date(),
+        planType: 'basic' // Default to basic plan for new users
       };
 
       try {
@@ -388,12 +498,13 @@ export class AuthService {
       console.error('❌ User email:', firebaseUser.email);
       
       // Return user data even if Firestore fails, but log the error clearly
-      const fallbackData = {
+      const fallbackData: User = {
         uid: firebaseUser.uid,
         email: firebaseUser.email || '',
         displayName: displayName,
         photoURL: firebaseUser.photoURL || undefined,
-        createdAt: new Date()
+        createdAt: new Date(),
+        planType: 'basic' // Default to basic plan
       };
       
       console.warn('⚠️ Returning fallback user data due to Firestore error');

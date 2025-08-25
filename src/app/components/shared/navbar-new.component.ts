@@ -166,6 +166,18 @@ import { effect } from '@angular/core';
                 {{ user()?.displayName }}
               </span>
               
+              <!-- Plan Badge -->
+              @if (user()?.planType) {
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                      [ngClass]="{
+                        'bg-gray-100 text-gray-600': user()?.planType === 'basic',
+                        'bg-blue-100 text-blue-600': user()?.planType === 'pro',
+                        'bg-purple-100 text-purple-600': user()?.planType === 'premium'
+                      }">
+                  {{ getPlanDisplayName() }}
+                </span>
+              }
+              
               <svg class="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
               </svg>
@@ -178,6 +190,18 @@ import { effect } from '@angular/core';
                   <div class="px-4 py-3 border-b border-primary-100">
                     <p class="text-sm font-medium text-primary-900">{{ user()?.displayName }}</p>
                     <p class="text-sm text-primary-500">{{ user()?.email }}</p>
+                    @if (user()?.planType) {
+                      <div class="mt-2">
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                              [ngClass]="{
+                                'bg-gray-100 text-gray-600': user()?.planType === 'basic',
+                                'bg-blue-100 text-blue-600': user()?.planType === 'pro',
+                                'bg-purple-100 text-purple-600': user()?.planType === 'premium'
+                              }">
+                          {{ getPlanDisplayName() }} Plan
+                        </span>
+                      </div>
+                    }
                   </div>
                   
                   <a
@@ -191,6 +215,20 @@ import { effect } from '@angular/core';
                     </svg>
                     Edit Profile
                   </a>
+
+                  @if (user()?.planType === 'basic') {
+                    <a
+                      routerLink="/app/upgrade"
+                      routerLinkActive="bg-primary-100 text-primary-800 font-semibold"
+                      (click)="closeUserMenu()"
+                      class="flex items-center px-4 py-2 text-sm text-amber-700 hover:bg-amber-50 transition-colors rounded-md mx-2"
+                    >
+                      <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                      </svg>
+                      Upgrade Plan
+                    </a>
+                  }
                   
                   <button
                     (click)="signOut()"
@@ -357,6 +395,26 @@ export class NavbarComponent {
   async signOut() {
     this.closeAllMenus();
     await this.authService.signOut();
+  }
+
+  getPlanDisplayName(): string {
+    const user = this.user();
+    if (!user || !user.planType) return 'Basic';
+    
+    return user.planType.charAt(0).toUpperCase() + user.planType.slice(1);
+  }
+
+  getPlanBadgeColor(): string {
+    const user = this.user();
+    if (!user || !user.planType) return 'bg-gray-100 text-gray-600';
+    
+    const colors = {
+      basic: 'bg-gray-100 text-gray-600',
+      pro: 'bg-blue-100 text-blue-600',
+      premium: 'bg-purple-100 text-purple-600'
+    };
+    
+    return colors[user.planType];
   }
 
   // Debug method - you can call this from browser console
