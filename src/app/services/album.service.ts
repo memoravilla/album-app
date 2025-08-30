@@ -121,15 +121,18 @@ export class AlbumService {
 
   async loadAlbumById(albumId: string): Promise<boolean> {
     try {
+      console.log('🔄 Loading album by ID:', albumId);
       const albumRef = doc(this.firestore, `albums/${albumId}`);
       const albumSnap = await getDoc(albumRef);
       
       if (albumSnap.exists()) {
         const album = { id: albumSnap.id, ...albumSnap.data() } as Album;
+        console.log('✅ Album loaded:', album.name, 'Theme:', album.theme?.name || 'No theme');
         this.selectedAlbum.set(album);
         await this.loadAlbumPhotos(albumId);
         return true;
       }
+      console.log('❌ Album not found:', albumId);
       return false;
     } catch (error) {
       console.error('Load album error:', error);

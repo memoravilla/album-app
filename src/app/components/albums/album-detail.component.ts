@@ -796,20 +796,35 @@ export class AlbumDetailComponent implements OnInit, OnDestroy {
     effect(() => {
       this.loadUploaderNames();
     }, { allowSignalWrites: true });
+     // Apply album theme when album loads or changes
+    effect(() => {
+      const album = this.album();
+      console.log('🔄 Album changed in effect:', album?.id, 'Theme:', album?.theme?.name);
+      this.applyAlbumTheme();
+    }, { allowSignalWrites: true });
   }
 
   ngOnInit() {
-    const albumId = this.route.snapshot.params['id'];
-    if (albumId) {
-      this.albumService.loadAlbumById(albumId);
-      this.loadPendingInvites(albumId);
-      this.songService.loadAlbumSongs(albumId);
-    }
+    // Watch for route parameter changes
+    this.route.params.subscribe(params => {
+      const albumId = params['id'];
+      if (albumId) {
+        console.log('🔗 Route changed to album:', albumId);
+        // Clear any existing theme first
+        this.themeService.removeThemeFromDocument();
+        // Load the new album
+        this.albumService.loadAlbumById(albumId);
+        this.loadPendingInvites(albumId);
+        this.songService.loadAlbumSongs(albumId);
+      }
+    });
+  
     
-    // Apply album theme when album loads
-    effect(() => {
+    // Also try to apply theme after a short delay to handle async loading
+    setTimeout(() => {
+      console.log('⏰ Delayed theme application check');
       this.applyAlbumTheme();
-    }, { allowSignalWrites: true });
+    }, 1000);
   }
 
   ngOnDestroy() {
@@ -1285,8 +1300,10 @@ export class AlbumDetailComponent implements OnInit, OnDestroy {
   // Theme methods
   private applyAlbumTheme() {
     const album = this.album();
+    console.log('🎨 Applying album theme - Album:', album?.id, 'Theme:', album?.theme);
+    
     if (album?.theme) {
-      console.log('🎨 Applying album theme:', album.theme);
+      console.log('🎨 Found theme, applying:', album.theme.name);
       this.themeService.setCurrentTheme(album.theme);
     } else {
       console.log('🎨 No theme found, removing any existing theme');
