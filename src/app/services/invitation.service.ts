@@ -87,8 +87,7 @@ export class InvitationService {
         inviteeEmail: inviteeEmail.toLowerCase(),
         inviteeUid,
         status: 'pending',
-        createdAt: new Date(),
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+        createdAt: new Date()
       };
 
       console.log('📄 Invitation data:', invitation);
@@ -320,7 +319,6 @@ export class InvitationService {
           inviteeUid: data['inviteeUid'],
           status: data['status'],
           createdAt: data['createdAt']?.toDate() || new Date(),
-          expiresAt: data['expiresAt']?.toDate() || new Date(),
           respondedAt: data['respondedAt']?.toDate()
         });
       });
@@ -376,7 +374,6 @@ export class InvitationService {
             inviteeUid: data['inviteeUid'],
             status: data['status'],
             createdAt: data['createdAt']?.toDate ? data['createdAt'].toDate() : new Date(data['createdAt']),
-            expiresAt: data['expiresAt']?.toDate ? data['expiresAt'].toDate() : new Date(data['expiresAt']),
             respondedAt: data['respondedAt'] ? (data['respondedAt']?.toDate ? data['respondedAt'].toDate() : new Date(data['respondedAt'])) : undefined
           };
           
@@ -440,7 +437,6 @@ export class InvitationService {
             inviteeUid: data['inviteeUid'],
             status: data['status'],
             createdAt: data['createdAt']?.toDate ? data['createdAt'].toDate() : new Date(data['createdAt']),
-            expiresAt: data['expiresAt']?.toDate ? data['expiresAt'].toDate() : new Date(data['expiresAt']),
             respondedAt: data['respondedAt'] ? (data['respondedAt']?.toDate ? data['respondedAt'].toDate() : new Date(data['respondedAt'])) : undefined
           };
           
@@ -525,8 +521,7 @@ export class InvitationService {
           inviterEmail: currentUser.email || '',
           inviteeEmail: 'test@example.com',
           status: 'pending',
-          createdAt: new Date(),
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 1 day
+          createdAt: new Date()
         };
         
         // Try to add the test document

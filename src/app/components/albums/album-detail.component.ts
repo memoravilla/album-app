@@ -41,14 +41,6 @@ import { Component, OnInit, inject, signal, effect, HostListener } from '@angula
                     </svg>
                     {{ photos().length }} photo{{ photos().length !== 1 ? 's' : '' }}
                   </span>
-                  @if (album()!.expirationDate) {
-                    <span class="flex items-center text-orange-600">
-                      <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                      </svg>
-                      Expires {{ album()!.expirationDate ? formatDate(album()!.expirationDate) : 'Unknown' }}
-                    </span>
-                  }
                 </div>
               </div>
 
@@ -289,9 +281,6 @@ import { Component, OnInit, inject, signal, effect, HostListener } from '@angula
                               <h4 class="font-medium text-primary-900">{{ invite.inviteeEmail }}</h4>
                               <p class="text-sm text-primary-600 mt-1">
                                 Invited {{ formatDate(invite.createdAt) }}
-                              </p>
-                              <p class="text-xs text-primary-500 mt-1">
-                                Expires {{ formatDate(invite.expiresAt) }}
                               </p>
                             </div>
                             <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">

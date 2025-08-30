@@ -222,20 +222,6 @@ import { effect } from '@angular/core';
                     </svg>
                     Edit Profile
                   </a>
-
-                  @if (user()?.planType === 'basic') {
-                    <a
-                      routerLink="/app/upgrade"
-                      routerLinkActive="bg-primary-100 text-primary-800 font-semibold"
-                      (click)="closeUserMenu()"
-                      class="flex items-center px-4 py-2 text-sm text-amber-700 hover:bg-amber-50 transition-colors rounded-md mx-2"
-                    >
-                      <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                      </svg>
-                      Upgrade Plan
-                    </a>
-                  }
                   
                   <button
                     (click)="signOut()"

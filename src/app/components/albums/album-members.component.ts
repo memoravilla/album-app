@@ -1,10 +1,10 @@
-import { Component, inject, signal, Input, Output, EventEmitter } from '@angular/core';
+import { Component, inject, signal, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { AlbumService } from '../../services/album.service';
 import { InvitationService } from '../../services/invitation.service';
 import { AuthService } from '../../services/auth.service';
-import { AlbumMember } from '../../models/interfaces';
+import { AlbumMember, User } from '../../models/interfaces';
 
 @Component({
   selector: 'app-album-members',
@@ -18,17 +18,91 @@ import { AlbumMember } from '../../models/interfaces';
           <h3 class="text-lg font-semibold text-gray-900 mb-4">Invite Members</h3>
           
           <form [formGroup]="inviteForm" (ngSubmit)="inviteMember()" class="space-y-4">
-            <div>
+            <div class="relative">
               <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
                 Email Address
               </label>
-              <input
-                id="email"
-                type="email"
-                formControlName="email"
-                placeholder="Enter email address"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              />
+              <div class="relative">
+                <input
+                  id="email"
+                  type="email"
+                  formControlName="email"
+                  placeholder="Enter email address or name"
+                  class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  (input)="onEmailInput($event)"
+                  (focus)="showSuggestions.set(true)"
+                  (blur)="onEmailBlur()"
+                  (keydown)="onKeyDown($event)"
+                  autocomplete="off"
+                />
+                @if (isSearching()) {
+                  <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                    <svg class="animate-spin h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  </div>
+                }
+              </div>
+              
+              <!-- Autocomplete dropdown -->
+              @if (showSuggestions() && (filteredUsers().length > 0 || isSearching())) {
+                <div class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  @if (isSearching()) {
+                    <div class="px-4 py-3 text-center text-gray-500">
+                      <svg class="animate-spin h-4 w-4 text-gray-400 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Searching...
+                    </div>
+                  } @else if (filteredUsers().length === 0) {
+                    <div class="px-4 py-3 text-center text-gray-500">
+                      No users found
+                    </div>
+                  } @else {
+                    @for (user of filteredUsers(); track user.uid; let i = $index) {
+                      <div 
+                        class="px-4 py-3 cursor-pointer border-b border-gray-100 last:border-b-0"
+                        [class.bg-primary-50]="i === selectedIndex()"
+                        [class.hover:bg-gray-50]="i !== selectedIndex()"
+                        [class.opacity-50]="isUserAlreadyMember(user) || isUserInvited(user)"
+                        [class.cursor-not-allowed]="isUserAlreadyMember(user) || isUserInvited(user)"
+                        (mousedown)="selectUser(user)"
+                        (mouseenter)="selectedIndex.set(i)"
+                      >
+                        <div class="flex items-center space-x-3">
+                          @if (user.photoURL) {
+                            <img 
+                              [src]="user.photoURL" 
+                              [alt]="user.displayName"
+                              class="w-8 h-8 rounded-full object-cover"
+                            />
+                          } @else {
+                            <div class="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
+                              <span class="text-white text-xs font-medium">
+                                {{ getInitials(user.displayName || user.email) }}
+                              </span>
+                            </div>
+                          }
+                          <div class="flex-1">
+                            <div class="text-sm font-medium text-gray-900">
+                              {{ user.displayName || 'No name' }}
+                            </div>
+                            <div class="text-sm text-gray-500">{{ user.email }}</div>
+                            @if (isUserAlreadyMember(user)) {
+                              <div class="text-xs text-amber-600">Already a member</div>
+                            } @else if (isUserInvited(user)) {
+                              <div class="text-xs text-blue-600">Already invited</div>
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  }
+                </div>
+              }
+              
               @if (inviteForm.get('email')?.errors?.['required'] && inviteForm.get('email')?.touched) {
                 <p class="mt-1 text-sm text-red-600">Email is required</p>
               }
@@ -153,7 +227,7 @@ import { AlbumMember } from '../../models/interfaces';
     </div>
   `
 })
-export class AlbumMembersComponent {
+export class AlbumMembersComponent implements OnInit {
   @Input() albumId: string = '';
   @Input() albumName: string = '';
   @Output() membersChanged = new EventEmitter<void>();
@@ -171,6 +245,14 @@ export class AlbumMembersComponent {
   inviteSuccess = signal<string>('');
   isAdmin = signal(false);
   failedImageUrls = signal<Set<string>>(new Set());
+  
+  // Autocomplete properties
+  showSuggestions = signal(false);
+  filteredUsers = signal<User[]>([]);
+  pendingInvites = signal<string[]>([]); // Store emails of pending invites
+  searchTimeout: any;
+  isSearching = signal(false);
+  selectedIndex = signal(-1);
 
   inviteForm = this.fb.group({
     email: ['', [Validators.required, Validators.email]]
@@ -180,6 +262,7 @@ export class AlbumMembersComponent {
     if (this.albumId) {
       this.loadMembers();
       this.checkAdminStatus();
+      this.loadPendingInvites();
     }
   }
 
@@ -223,6 +306,9 @@ export class AlbumMembersComponent {
       if (success) {
         this.inviteSuccess.set(`Invitation sent to ${email}`);
         this.inviteForm.reset();
+        this.loadPendingInvites(); // Refresh pending invites
+        this.showSuggestions.set(false);
+        this.filteredUsers.set([]);
         setTimeout(() => this.inviteSuccess.set(''), 3000);
       } else {
         this.inviteError.set('Failed to send invitation. User may already be invited or be a member.');
@@ -260,6 +346,79 @@ export class AlbumMembersComponent {
       } catch (error) {
         console.error('❌ Error promoting to admin:', error);
       }
+    }
+  }
+
+  // Autocomplete methods
+  async onEmailInput(event: any) {
+    const value = event.target.value;
+    
+    // Clear previous timeout
+    if (this.searchTimeout) {
+      clearTimeout(this.searchTimeout);
+    }
+    
+    if (!value || value.length < 2) {
+      this.filteredUsers.set([]);
+      this.showSuggestions.set(false);
+      this.isSearching.set(false);
+      this.selectedIndex.set(-1);
+      return;
+    }
+    
+    this.isSearching.set(true);
+    
+    // Debounce search
+    this.searchTimeout = setTimeout(async () => {
+      try {
+        const users = await this.authService.searchUsersByEmail(value, 10);
+        this.filteredUsers.set(users);
+        this.selectedIndex.set(-1);
+        this.showSuggestions.set(true);
+      } catch (error) {
+        console.error('❌ Error searching users:', error);
+        this.filteredUsers.set([]);
+      } finally {
+        this.isSearching.set(false);
+      }
+    }, 300);
+  }
+  
+  onEmailBlur() {
+    // Delay hiding suggestions to allow for click events
+    setTimeout(() => {
+      this.showSuggestions.set(false);
+      this.selectedIndex.set(-1);
+    }, 200);
+  }
+  
+  selectUser(user: User) {
+    // Don't allow selection of users who are already members or invited
+    if (this.isUserAlreadyMember(user) || this.isUserInvited(user)) {
+      return;
+    }
+    
+    this.inviteForm.patchValue({ email: user.email });
+    this.showSuggestions.set(false);
+    this.filteredUsers.set([]);
+    this.selectedIndex.set(-1);
+  }
+  
+  isUserAlreadyMember(user: User): boolean {
+    return this.members().some(member => member.uid === user.uid || member.email === user.email);
+  }
+  
+  isUserInvited(user: User): boolean {
+    return this.pendingInvites().includes(user.email);
+  }
+  
+  async loadPendingInvites() {
+    try {
+      const invites = await this.invitationService.getMyAlbumInvitations(this.albumId);
+      const emails = invites.map(invite => invite.inviteeEmail);
+      this.pendingInvites.set(emails);
+    } catch (error) {
+      console.error('❌ Error loading pending invites:', error);
     }
   }
 
@@ -307,5 +466,40 @@ export class AlbumMembersComponent {
 
   isImageFailed(photoURL: string): boolean {
     return this.failedImageUrls().has(photoURL);
+  }
+
+  onKeyDown(event: KeyboardEvent) {
+    if (!this.showSuggestions() || this.filteredUsers().length === 0) {
+      return;
+    }
+    
+    const users = this.filteredUsers();
+    const currentIndex = this.selectedIndex();
+    
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        const nextIndex = currentIndex < users.length - 1 ? currentIndex + 1 : 0;
+        this.selectedIndex.set(nextIndex);
+        break;
+        
+      case 'ArrowUp':
+        event.preventDefault();
+        const prevIndex = currentIndex > 0 ? currentIndex - 1 : users.length - 1;
+        this.selectedIndex.set(prevIndex);
+        break;
+        
+      case 'Enter':
+        if (this.showSuggestions() && currentIndex >= 0 && currentIndex < users.length) {
+          event.preventDefault();
+          this.selectUser(users[currentIndex]);
+        }
+        break;
+        
+      case 'Escape':
+        this.showSuggestions.set(false);
+        this.selectedIndex.set(-1);
+        break;
+    }
   }
 }

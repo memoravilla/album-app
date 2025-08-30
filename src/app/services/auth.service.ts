@@ -15,7 +15,7 @@ import {
   updatePassword,
   onAuthStateChanged
 } from '@angular/fire/auth';
-import { Firestore, doc, setDoc, getDoc, updateDoc } from '@angular/fire/firestore';
+import { Firestore, doc, setDoc, getDoc, updateDoc, collection, getDocs } from '@angular/fire/firestore';
 import { Router } from '@angular/router';
 import { User, PlanFeatures } from '../models/interfaces';
 
@@ -524,6 +524,75 @@ export class AuthService {
     } catch (error) {
       console.error('Get user data error:', error);
       return null;
+    }
+  }
+
+  // Search for users by email pattern (for autocomplete)
+  async searchUsersByEmail(emailPattern: string, limit: number = 10): Promise<User[]> {
+    if (!emailPattern || emailPattern.length < 2) {
+      return [];
+    }
+
+    try {
+      const usersRef = collection(this.firestore, 'users');
+      
+      // Note: Firestore doesn't support full-text search out of the box
+      // This is a simple implementation that gets all users and filters client-side
+      // For production, consider using Algolia or Cloud Functions for better search
+      const snapshot = await getDocs(usersRef);
+      
+      const users: User[] = [];
+      const pattern = emailPattern.toLowerCase().trim();
+      const currentUserId = this.currentUser()?.uid;
+      
+      snapshot.forEach((doc) => {
+        const userData = doc.data();
+        
+        // Skip current user
+        if (doc.id === currentUserId) {
+          return;
+        }
+        
+        const user: User = {
+          uid: doc.id,
+          email: userData['email'] || '',
+          displayName: userData['displayName'] || '',
+          photoURL: userData['photoURL'] || '',
+          planType: userData['planType'] || 'basic',
+          planExpiresAt: userData['planExpiresAt']?.toDate(),
+          createdAt: userData['createdAt']?.toDate() || new Date()
+        };
+        
+        // Filter by email pattern and display name
+        const emailMatch = user.email.toLowerCase().includes(pattern);
+        const nameMatch = user.displayName && user.displayName.toLowerCase().includes(pattern);
+        
+        if (emailMatch || nameMatch) {
+          users.push(user);
+        }
+      });
+      
+      // Sort by relevance (exact email matches first, then display name matches)
+      users.sort((a, b) => {
+        const aEmailExact = a.email.toLowerCase().startsWith(pattern);
+        const bEmailExact = b.email.toLowerCase().startsWith(pattern);
+        const aNameExact = a.displayName?.toLowerCase().startsWith(pattern);
+        const bNameExact = b.displayName?.toLowerCase().startsWith(pattern);
+        
+        // Prioritize exact matches
+        if (aEmailExact && !bEmailExact) return -1;
+        if (!aEmailExact && bEmailExact) return 1;
+        if (aNameExact && !bNameExact) return -1;
+        if (!aNameExact && bNameExact) return 1;
+        
+        // Then sort alphabetically by email
+        return a.email.localeCompare(b.email);
+      });
+      
+      return users.slice(0, limit);
+    } catch (error) {
+      console.error('❌ Error searching users:', error);
+      return [];
     }
   }
 

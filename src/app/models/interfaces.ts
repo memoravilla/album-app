@@ -68,7 +68,6 @@ export interface AlbumInvitation {
   inviteeUid?: string; // Set when user accepts invitation
   status: 'pending' | 'accepted' | 'declined';
   createdAt: Date;
-  expiresAt: Date;
   respondedAt?: Date;
 }
 

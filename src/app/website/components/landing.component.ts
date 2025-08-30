@@ -99,7 +99,7 @@ interface Founder {
             <a href="#features" class="text-gray-700 hover:text-primary-600 transition-all duration-300 hover:scale-105">Features</a>
             <a href="#demo" class="text-gray-700 hover:text-primary-600 transition-all duration-300 hover:scale-105">Demo</a>
             <a href="#founders" class="text-gray-700 hover:text-primary-600 transition-all duration-300 hover:scale-105">About</a>
-            <a href="#pricing" class="text-gray-700 hover:text-primary-600 transition-all duration-300 hover:scale-105">Pricing</a>
+            <!-- <a href="#pricing" class="text-gray-700 hover:text-primary-600 transition-all duration-300 hover:scale-105">Pricing</a> -->
             <a href="#contact" class="text-gray-700 hover:text-primary-600 transition-all duration-300 hover:scale-105">Contact</a>
             <a routerLink="/auth/login" class="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-all duration-300 transform hover:scale-105 hover:shadow-lg animate-bounce-gentle">
               Sign In
@@ -121,7 +121,7 @@ interface Founder {
               <a href="#features" class="text-gray-700 hover:text-primary-600 transition-colors">Features</a>
               <a href="#demo" class="text-gray-700 hover:text-primary-600 transition-colors">Demo</a>
               <a href="#founders" class="text-gray-700 hover:text-primary-600 transition-colors">About</a>
-              <a href="#pricing" class="text-gray-700 hover:text-primary-600 transition-colors">Pricing</a>
+              <!-- <a href="#pricing" class="text-gray-700 hover:text-primary-600 transition-colors">Pricing</a> -->
               <a href="#contact" class="text-gray-700 hover:text-primary-600 transition-colors">Contact</a>
               <a routerLink="/auth/login" class="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors text-center">
                 Sign In
@@ -409,7 +409,7 @@ interface Founder {
     </section>
 
     <!-- Pricing -->
-    <section id="pricing" class="py-16 bg-gray-50">
+    <!-- <section id="pricing" class="py-16 bg-gray-50">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-16">
           <h2 class="text-4xl font-bold text-gray-900 mb-4">Simple Pricing</h2>
@@ -466,7 +466,7 @@ interface Founder {
           }
         </div>
       </div>
-    </section>
+    </section> -->
 
     <!-- Contact Us -->
     <section id="contact" class="py-16 bg-white">

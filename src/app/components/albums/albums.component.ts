@@ -197,12 +197,6 @@ import { Album } from '../../models/interfaces';
                       </span>
                     }
                   </div>
-
-                  @if (album.expirationDate) {
-                    <div class="mt-2 text-xs text-orange-600">
-                      Expires: {{ formatDate(album.expirationDate) }}
-                    </div>
-                  }
                 </div>
               </div>
             }

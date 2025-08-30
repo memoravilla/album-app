@@ -145,7 +145,6 @@ export class NotificationService {
               inviteeUid: data['inviteeUid'],
               status: data['status'],
               createdAt: data['createdAt']?.toDate() || new Date(),
-              expiresAt: data['expiresAt']?.toDate() || new Date(),
               respondedAt: data['respondedAt']?.toDate()
             };
             
