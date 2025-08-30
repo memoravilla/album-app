@@ -367,7 +367,7 @@ export class AuthService {
       pro: {
         name: 'pro',
         displayName: 'Pro',
-        price: 9.99,
+        price: 19.00,
         currency: 'USD',
         billingPeriod: 'monthly',
         maxAlbums: 25,
@@ -381,7 +381,7 @@ export class AuthService {
       premium: {
         name: 'premium',
         displayName: 'Premium',
-        price: 19.99,
+        price: 39.00,
         currency: 'USD',
         billingPeriod: 'monthly',
         maxAlbums: -1, // Unlimited

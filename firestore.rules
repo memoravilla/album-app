@@ -71,5 +71,18 @@ service cloud.firestore {
       allow read, update, delete: if request.auth != null; // Only authenticated users can read/manage inquiries
       allow list: if request.auth != null; // Only authenticated users can list inquiries
     }
+    
+    // Song suggestions - users can suggest songs for albums they are members of
+    match /songSuggestions/{suggestionId} {
+      allow read: if request.auth != null; // All authenticated users can read song suggestions
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.suggestedBy;
+      allow update: if request.auth != null && 
+        (request.auth.uid == resource.data.suggestedBy || // Users can update their own suggestions
+         resource.data.votes.hasAll([request.auth.uid]) != request.resource.data.votes.hasAll([request.auth.uid])); // Allow voting changes
+      allow delete: if request.auth != null && 
+        request.auth.uid == resource.data.suggestedBy; // Users can delete their own suggestions
+      allow list: if request.auth != null; // All authenticated users can list song suggestions
+    }
   }
 }

@@ -615,7 +615,7 @@ export class ProfileComponent implements OnInit {
 
   upgradePlan() {
     // Navigate to the upgrade page
-    this.router.navigate(['/app/upgrade']);
+    // this.router.navigate(['/app/subscription']);
   }
 
   private clearMessages() {

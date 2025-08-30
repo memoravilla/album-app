@@ -43,6 +43,7 @@ export interface Photo {
   downloadURL: string;
   uploadedBy: string;
   uploadedAt: Date;
+  updatedAt?: Date;
   caption?: string;
   thumbnailUrl?: string;
 }
@@ -60,12 +61,12 @@ export interface AlbumInvitation {
   id: string;
   albumId: string;
   albumName: string;
-  inviterUid: string;
-  inviterName: string;
   inviterEmail: string;
+  inviterUid: string;
+  inviterName?: string;
   inviteeEmail: string;
-  inviteeUid?: string; // Set when user is found
-  status: 'pending' | 'accepted' | 'declined' | 'expired';
+  inviteeUid?: string; // Set when user accepts invitation
+  status: 'pending' | 'accepted' | 'declined';
   createdAt: Date;
   expiresAt: Date;
   respondedAt?: Date;
@@ -92,4 +93,17 @@ export interface UpdateUserProfile {
   displayName?: string;
   bio?: string;
   photoURL?: string;
+}
+
+export interface SongSuggestion {
+  id: string;
+  albumId: string;
+  title: string;
+  artist: string;
+  suggestedBy: string; // User UID
+  suggestedAt: Date;
+  votes: string[]; // Array of user UIDs who voted for this song
+  spotifyUrl?: string;
+  youtubeUrl?: string;
+  description?: string; // Why this song fits the album
 }

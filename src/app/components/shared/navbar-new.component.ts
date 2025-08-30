@@ -40,6 +40,13 @@ import { effect } from '@angular/core';
             >
               My Albums
             </a>
+            <!-- <a
+              routerLink="/app/subscription"
+              routerLinkActive="bg-primary-100 text-primary-800 font-semibold"
+              class="text-primary-600 hover:text-primary-700 hover:bg-primary-50 px-4 py-2 rounded-lg text-sm font-medium transition-all"
+            >
+              Subscription
+            </a> -->
 
             <!-- Notifications -->
             <div class="relative">

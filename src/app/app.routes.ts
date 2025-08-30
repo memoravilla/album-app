@@ -63,8 +63,21 @@ export const routes: Routes = [
       {
         path: 'debug',
         loadComponent: () => import('./components/debug/debug.component').then(m => m.DebugComponent)
+      },
+      {
+        path: 'subscription',
+        loadComponent: () => import('./components/subscription/subscription.component').then(m => m.SubscriptionComponent)
       }
     ]
+  },
+  // Subscription routes (outside of app layout for better UX)
+  {
+    path: 'subscription/success',
+    loadComponent: () => import('./components/subscription/subscription-success.component').then(m => m.SubscriptionSuccessComponent)
+  },
+  {
+    path: 'subscription/cancel',
+    loadComponent: () => import('./components/subscription/subscription-cancel.component').then(m => m.SubscriptionCancelComponent)
   },
   // Legacy redirects
   {

@@ -237,6 +237,32 @@ export class AlbumService {
     }
   }
 
+  async updatePhoto(photoId: string, updates: Partial<Photo>): Promise<boolean> {
+    try {
+      console.log('📝 Updating photo:', photoId, updates);
+      
+      // Update the photo document in Firestore
+      const photoRef = doc(this.firestore, `photos/${photoId}`);
+      await updateDoc(photoRef, {
+        ...updates,
+        updatedAt: Timestamp.now()
+      });
+      
+      // Get the updated photo to reload the album photos
+      const photoSnap = await getDoc(photoRef);
+      if (photoSnap.exists()) {
+        const photoData = photoSnap.data() as Photo;
+        await this.loadAlbumPhotos(photoData.albumId);
+      }
+      
+      console.log('✅ Photo updated successfully');
+      return true;
+    } catch (error) {
+      console.error('❌ Update photo error:', error);
+      return false;
+    }
+  }
+
   async updateAlbum(albumId: string, updates: Partial<Album>): Promise<boolean> {
     try {
       const albumRef = doc(this.firestore, `albums/${albumId}`);

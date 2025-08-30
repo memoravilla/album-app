@@ -1,0 +1,18 @@
+<svg width="400" height="400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f093fb;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f5576c;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="200" cy="200" r="200" fill="url(#grad2)"/>
+  
+  <!-- Profile placeholder icon -->
+  <circle cx="200" cy="150" r="50" fill="white" opacity="0.3"/>
+  <path d="M120 320 Q120 280 200 280 Q280 280 280 320 L280 400 L120 400 Z" fill="white" opacity="0.3"/>
+  
+  <!-- Initials -->
+  <text x="200" y="220" font-family="Arial, sans-serif" font-size="72" font-weight="bold" text-anchor="middle" fill="white">MV</text>
+</svg>

@@ -1,18 +1,20 @@
 import { AlbumMembersComponent } from './album-members.component';
+import { PhotoEditorComponent } from '../photo-editor/photo-editor.component';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AlbumService } from '../../services/album.service';
 import { AuthService } from '../../services/auth.service';
 import { InvitationService } from '../../services/invitation.service';
-import { Album, Photo, User, AlbumInvitation } from '../../models/interfaces';
-import { NavbarComponent } from '../shared/navbar-new.component';
+import { SongService } from '../../services/song.service';
+import { Album, Photo, User, AlbumInvitation, SongSuggestion } from '../../models/interfaces';
 import { Component, OnInit, inject, signal, effect, HostListener } from '@angular/core';
 
 
 @Component({
   selector: 'app-album-detail',
   standalone: true,
-  imports: [CommonModule, NavbarComponent, AlbumMembersComponent],
+  imports: [CommonModule, AlbumMembersComponent, PhotoEditorComponent, FormsModule],
   template: `
     <div class="min-h-screen bg-beige-50">
       @if (album()) {
@@ -121,6 +123,13 @@ import { Component, OnInit, inject, signal, effect, HostListener } from '@angula
                   class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors"
                 >
                   Photos ({{ photos().length }})
+                </button>
+                <button
+                  (click)="activeTab.set('songs')"
+                  [class]="activeTab() === 'songs' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                  class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors"
+                >
+                  Songs ({{ songService.albumSongs().length }})
                 </button>
                 <button
                   (click)="activeTab.set('members')"
@@ -310,6 +319,254 @@ import { Component, OnInit, inject, signal, effect, HostListener } from '@angula
                   }
                 </div>
               }
+
+              <!-- Songs Tab -->
+              @if (activeTab() === 'songs') {
+                <div class="space-y-6">
+                  <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-primary-900">Song Suggestions</h3>
+                    <div class="flex items-center space-x-3">
+                      <p class="text-sm text-primary-600">
+                        {{ songService.albumSongs().length }} song{{ songService.albumSongs().length !== 1 ? 's' : '' }} suggested
+                      </p>
+                      <button
+                        (click)="showSongForm.set(!showSongForm())"
+                        class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm flex items-center"
+                      >
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        Suggest Song
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Song Suggestion Form -->
+                  @if (showSongForm()) {
+                    <div class="bg-primary-50 border border-primary-200 rounded-lg p-6">
+                      <h4 class="text-lg font-medium text-primary-900 mb-4">Suggest a Song</h4>
+                      <form (ngSubmit)="submitSongSuggestion()" #songFormElement="ngForm">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <div>
+                            <label class="block text-sm font-medium text-primary-700 mb-2">Song Title *</label>
+                            <input
+                              type="text"
+                              [(ngModel)]="songForm().title"
+                              name="title"
+                              required
+                              class="w-full px-3 py-2 border border-primary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              placeholder="Enter song title"
+                            />
+                          </div>
+                          <div>
+                            <label class="block text-sm font-medium text-primary-700 mb-2">Artist *</label>
+                            <input
+                              type="text"
+                              [(ngModel)]="songForm().artist"
+                              name="artist"
+                              required
+                              class="w-full px-3 py-2 border border-primary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              placeholder="Enter artist name"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <div>
+                            <label class="block text-sm font-medium text-primary-700 mb-2">Spotify URL</label>
+                            <input
+                              type="url"
+                              [(ngModel)]="songForm().spotifyUrl"
+                              name="spotifyUrl"
+                              class="w-full px-3 py-2 border border-primary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              placeholder="https://open.spotify.com/track/..."
+                            />
+                          </div>
+                          <div>
+                            <label class="block text-sm font-medium text-primary-700 mb-2">YouTube URL</label>
+                            <input
+                              type="url"
+                              [(ngModel)]="songForm().youtubeUrl"
+                              name="youtubeUrl"
+                              class="w-full px-3 py-2 border border-primary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              placeholder="https://www.youtube.com/watch?v=..."
+                            />
+                          </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                          <label class="block text-sm font-medium text-primary-700 mb-2">Why this song?</label>
+                          <textarea
+                            [(ngModel)]="songForm().description"
+                            name="description"
+                            rows="3"
+                            class="w-full px-3 py-2 border border-primary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            placeholder="Tell everyone why this song fits the album..."
+                          ></textarea>
+                        </div>
+                        
+                        <div class="flex space-x-3">
+                          <button
+                            type="submit"
+                            [disabled]="songService.isLoading() || !songFormElement.form.valid"
+                            class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors"
+                          >
+                            @if (songService.isLoading()) {
+                              <div class="flex items-center">
+                                <div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                                Suggesting...
+                              </div>
+                            } @else {
+                              Suggest Song
+                            }
+                          </button>
+                          <button
+                            type="button"
+                            (click)="showSongForm.set(false); resetSongForm()"
+                            class="px-4 py-2 text-primary-600 border border-primary-300 rounded-lg hover:bg-primary-50 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  }
+
+                  <!-- Song List -->
+                  @if (songService.albumSongs().length === 0) {
+                    <div class="text-center py-12">
+                      <svg class="w-16 h-16 text-primary-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm12-3c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2z"></path>
+                      </svg>
+                      <h4 class="text-lg font-medium text-primary-900 mb-2">No song suggestions yet</h4>
+                      <p class="text-primary-600 mb-4">
+                        Be the first to suggest a song that captures the spirit of this album!
+                      </p>
+                      <button
+                        (click)="showSongForm.set(true)"
+                        class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                      >
+                        Suggest First Song
+                      </button>
+                    </div>
+                  } @else {
+                    <div class="space-y-4">
+                      @for (song of songService.albumSongs(); track song.id) {
+                        <div class="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                          <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                              <div class="flex items-center space-x-3 mb-2">
+                                <h4 class="text-lg font-semibold text-primary-900">{{ song.title }}</h4>
+                                <span class="text-primary-600">by {{ song.artist }}</span>
+                              </div>
+                              
+                              @if (song.description) {
+                                <p class="text-primary-600 mb-3">{{ song.description }}</p>
+                              }
+                              
+                              <div class="flex items-center space-x-4 text-sm text-primary-500">
+                                <span class="flex items-center">
+                                  <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                  </svg>
+                                  {{ getUploaderName(song.suggestedBy) }}
+                                </span>
+                                <span class="flex items-center">
+                                  <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                  </svg>
+                                  {{ formatDateTime(song.suggestedAt) }}
+                                </span>
+                              </div>
+                              
+                              <!-- Links -->
+                              @if (song.spotifyUrl || song.youtubeUrl) {
+                                <div class="flex space-x-3 mt-3">
+                                  @if (song.spotifyUrl) {
+                                    <a
+                                      [href]="song.spotifyUrl"
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      class="inline-flex items-center px-3 py-1 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
+                                    >
+                                      <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.84-.179-.84-.66 0-.359.24-.66.54-.78 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.242 1.021zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/>
+                                      </svg>
+                                      Spotify
+                                    </a>
+                                  }
+                                  @if (song.youtubeUrl) {
+                                    <a
+                                      [href]="song.youtubeUrl"
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      class="inline-flex items-center px-3 py-1 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors"
+                                    >
+                                      <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                                      </svg>
+                                      YouTube
+                                    </a>
+                                  }
+                                </div>
+                              }
+                            </div>
+                            
+                            <!-- Vote and Actions -->
+                            <div class="flex flex-col items-end space-y-2">
+                              <div class="flex items-center space-x-2">
+                                @if (songService.hasUserVoted(song)) {
+                                  <button
+                                    (click)="unvoteSong(song.id)"
+                                    class="flex items-center px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm"
+                                  >
+                                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
+                                      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                    </svg>
+                                    {{ song.votes.length }}
+                                  </button>
+                                } @else {
+                                  <button
+                                    (click)="voteSong(song.id)"
+                                    class="flex items-center px-3 py-2 border border-primary-300 text-primary-600 rounded-lg hover:bg-primary-50 transition-colors text-sm"
+                                  >
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                                    </svg>
+                                    {{ song.votes.length }}
+                                  </button>
+                                }
+                                
+                                @if (songService.canDeleteSong(song)) {
+                                  <button
+                                    (click)="deleteSong(song.id)"
+                                    class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    title="Delete song"
+                                  >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                  </button>
+                                }
+                              </div>
+                              
+                              @if (song.votes.length > 0) {
+                                <div class="text-xs text-primary-500">
+                                  @if (song.votes.length === 1) {
+                                    1 vote
+                                  } @else {
+                                    {{ song.votes.length }} votes
+                                  }
+                                </div>
+                              }
+                            </div>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              }
             </div>
           </div>
         </div>
@@ -440,6 +697,16 @@ import { Component, OnInit, inject, signal, effect, HostListener } from '@angula
               <!-- Action buttons -->
               <div class="ml-4 flex space-x-2">
                 <button
+                  (click)="openPhotoEditor(selectedPhoto()!)"
+                  class="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm flex items-center"
+                >
+                  <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                  </svg>
+                  Edit
+                </button>
+                
+                <button
                   (click)="downloadPhoto(selectedPhoto()!)"
                   class="px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm flex items-center"
                 >
@@ -474,6 +741,16 @@ import { Component, OnInit, inject, signal, effect, HostListener } from '@angula
         (click)="closeMenus()"
       ></div>
     }
+
+    <!-- Photo Editor -->
+    @if (isPhotoEditorOpen()) {
+      <app-photo-editor
+        [imageUrl]="selectedPhoto()!.downloadURL"
+        [photoId]="selectedPhoto()!.id"
+        (onSave)="onPhotoEdited($event)"
+        (onClose)="closePhotoEditor()"
+      ></app-photo-editor>
+    }
   `
 })
 export class AlbumDetailComponent implements OnInit {
@@ -482,6 +759,7 @@ export class AlbumDetailComponent implements OnInit {
   protected albumService = inject(AlbumService);
   private authService = inject(AuthService);
   protected invitationService = inject(InvitationService);
+  protected songService = inject(SongService);
 
   album = this.albumService.selectedAlbum;
   photos = this.albumService.albumPhotos;
@@ -491,8 +769,19 @@ export class AlbumDetailComponent implements OnInit {
   showAlbumMenu = signal(false);
   uploaderNames = signal<Map<string, string>>(new Map()); // Cache for uploader names
   pendingInvites = signal<AlbumInvitation[]>([]);
-  activeTab = signal<'photos' | 'members' | 'invites'>('photos'); // Add active tab signal
+  activeTab = signal<'photos' | 'members' | 'invites' | 'songs'>('photos'); // Add songs tab
   failedPhotoUrls = signal<Set<string>>(new Set());
+  isPhotoEditorOpen = signal(false); // Photo editor state
+  
+  // Song suggestion form
+  showSongForm = signal(false);
+  songForm = signal({
+    title: '',
+    artist: '',
+    spotifyUrl: '',
+    youtubeUrl: '',
+    description: ''
+  });
 
   constructor() {
     // Update uploader names when photos change
@@ -506,6 +795,7 @@ export class AlbumDetailComponent implements OnInit {
     if (albumId) {
       this.albumService.loadAlbumById(albumId);
       this.loadPendingInvites(albumId);
+      this.songService.loadAlbumSongs(albumId);
     }
   }
 
@@ -881,5 +1171,96 @@ export class AlbumDetailComponent implements OnInit {
 
   isPhotoFailed(photoUrl: string): boolean {
     return this.failedPhotoUrls().has(photoUrl);
+  }
+
+  // Photo Editor Methods
+  openPhotoEditor(photo: Photo) {
+    console.log('🎨 Opening photo editor for:', photo.fileName);
+    this.isPhotoEditorOpen.set(true);
+  }
+
+  closePhotoEditor() {
+    console.log('🎨 Closing photo editor');
+    this.isPhotoEditorOpen.set(false);
+  }
+
+  async onPhotoEdited(event: { editedImageUrl: string; photoId: string }) {
+    console.log('🎨 Photo edited, saving changes:', event);
+    
+    try {
+      // Update the photo in the album service
+      const success = await this.albumService.updatePhoto(event.photoId, {
+        downloadURL: event.editedImageUrl
+      });
+      
+      if (success) {
+        console.log('✅ Photo updated successfully');
+        // Refresh the photos to show the updated image
+        const albumId = this.route.snapshot.params['id'];
+        if (albumId) {
+          this.albumService.loadAlbumById(albumId);
+        }
+      } else {
+        console.error('❌ Failed to update photo');
+        alert('Failed to save edited photo. Please try again.');
+      }
+    } catch (error) {
+      console.error('❌ Error saving edited photo:', error);
+      alert('Failed to save edited photo. Please try again.');
+    }
+    
+    this.closePhotoEditor();
+  }
+
+  // Song Suggestion Methods
+  resetSongForm() {
+    this.songForm.set({
+      title: '',
+      artist: '',
+      spotifyUrl: '',
+      youtubeUrl: '',
+      description: ''
+    });
+  }
+
+  async submitSongSuggestion() {
+    const album = this.album();
+    const form = this.songForm();
+    
+    if (!album || !form.title.trim() || !form.artist.trim()) {
+      return;
+    }
+
+    const success = await this.songService.suggestSong(album.id, form);
+    
+    if (success) {
+      this.showSongForm.set(false);
+      this.resetSongForm();
+    } else {
+      alert('Failed to suggest song. Please try again.');
+    }
+  }
+
+  async voteSong(songId: string) {
+    const success = await this.songService.voteSong(songId);
+    if (!success) {
+      alert('Failed to vote for song. Please try again.');
+    }
+  }
+
+  async unvoteSong(songId: string) {
+    const success = await this.songService.unvoteSong(songId);
+    if (!success) {
+      alert('Failed to remove vote. Please try again.');
+    }
+  }
+
+  async deleteSong(songId: string) {
+    if (confirm('Are you sure you want to delete this song suggestion?')) {
+      const success = await this.songService.deleteSong(songId);
+      if (!success) {
+        alert('Failed to delete song. Please try again.');
+      }
+    }
   }
 }

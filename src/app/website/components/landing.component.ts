@@ -1108,9 +1108,8 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       period: 'forever',
       description: 'Perfect for getting started with your first albums',
       features: [
-        '6 photo albums',
-        '300 photos per album',
-        'Basic sharing',
+        '3 albums',
+        '100 photos per album',
         'Mobile & web access',
         'Community support'
       ],
@@ -1120,31 +1119,30 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     },
     {
       name: 'Pro',
-      price: 10,
+      price: 19,
       period: 'month',
       description: 'For families who want to preserve all their memories',
       features: [
-        'Unlimited albums',
-        '1,000 photos per album',
-        'Advanced sharing & permissions',
+        'Everything in Basic',
+        '10 Albums',
+        '500 Photos per Album',
         'Priority support',
-        'Custom themes',
-        'Download originals'
       ],
       buttonText: 'Coming Soon',
       featured: true
     },
     {
       name: 'Premium',
-      price: 29,
+      price: 39,
       period: 'month',
       description: 'Perfect for large families and special occasions',
       features: [
         'Everything in Pro',
+        'Unlimited albums',
         'Unlimited photos',
-        'Premium themes',
         'Photo Editing tools',
-        'Priority support'
+        'Custom theming',
+        'Dedicated support'
       ],
       buttonText: 'Coming Soon',
       featured: false
