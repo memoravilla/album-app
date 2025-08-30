@@ -34,6 +34,28 @@ export interface Album {
   members: string[]; // User UIDs
   admins: string[]; // User UIDs
   coverPhotoUrl?: string;
+  theme?: AlbumTheme;
+}
+
+export interface AlbumTheme {
+  id: string;
+  name: string;
+  primary: string;
+  secondary: string;
+  accent: string;
+  background: string;
+  text: string;
+  cardBackground: string;
+  isPremium?: boolean;
+}
+
+export interface ThemePreset {
+  id: string;
+  name: string;
+  description: string;
+  theme: AlbumTheme;
+  isPremium: boolean;
+  previewUrl?: string;
 }
 
 export interface Photo {

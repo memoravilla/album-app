@@ -1,5 +1,6 @@
 import { AlbumMembersComponent } from './album-members.component';
 import { PhotoEditorComponent } from '../photo-editor/photo-editor.component';
+import { ThemeSelectorComponent } from '../shared/theme-selector.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -7,25 +8,26 @@ import { AlbumService } from '../../services/album.service';
 import { AuthService } from '../../services/auth.service';
 import { InvitationService } from '../../services/invitation.service';
 import { SongService } from '../../services/song.service';
-import { Album, Photo, User, AlbumInvitation, SongSuggestion } from '../../models/interfaces';
-import { Component, OnInit, inject, signal, effect, HostListener } from '@angular/core';
+import { ThemeService } from '../../services/theme.service';
+import { Album, Photo, User, AlbumInvitation, SongSuggestion, AlbumTheme } from '../../models/interfaces';
+import { Component, OnInit, inject, signal, effect, HostListener, OnDestroy } from '@angular/core';
 
 
 @Component({
   selector: 'app-album-detail',
   standalone: true,
-  imports: [CommonModule, AlbumMembersComponent, PhotoEditorComponent, FormsModule],
+  imports: [CommonModule, AlbumMembersComponent, PhotoEditorComponent, FormsModule, ThemeSelectorComponent],
   template: `
-    <div class="min-h-screen bg-beige-50">
+    <div class="min-h-screen bg-beige-50 album-themed">
       @if (album()) {
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <!-- Album Header -->
-          <div class="bg-white rounded-xl shadow-sm border border-primary-100 p-6 mb-8">
+          <div class="themed-card rounded-xl shadow-sm border p-6 mb-8">
             <div class="flex justify-between items-start">
               <div class="flex-1">
-                <h1 class="text-3xl font-bold text-primary-900 mb-2">{{ album()!.name }}</h1>
+                <h1 class="text-3xl font-bold album-text mb-2">{{ album()!.name }}</h1>
                 @if (album()!.description) {
-                  <p class="text-primary-600 mb-4">{{ album()!.description }}</p>
+                  <p class="album-text opacity-75 mb-4">{{ album()!.description }}</p>
                 }
                 
                 <div class="flex items-center space-x-6 text-sm text-primary-500">
@@ -106,26 +108,26 @@ import { Component, OnInit, inject, signal, effect, HostListener } from '@angula
           </div>
 
           <!-- Tabs -->
-          <div class="bg-white rounded-xl shadow-sm border border-primary-100 mb-8">
-            <div class="border-b border-primary-100">
+          <div class="themed-card rounded-xl shadow-sm border mb-8">
+            <div class="border-b album-accent-border">
               <nav class="flex space-x-8 px-6" aria-label="Tabs">
                 <button
                   (click)="activeTab.set('photos')"
-                  [class]="activeTab() === 'photos' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                  [class]="activeTab() === 'photos' ? 'tab-active' : 'tab-inactive'"
                   class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors"
                 >
                   Photos ({{ photos().length }})
                 </button>
                 <button
                   (click)="activeTab.set('songs')"
-                  [class]="activeTab() === 'songs' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                  [class]="activeTab() === 'songs' ? 'tab-active' : 'tab-inactive'"
                   class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors"
                 >
                   Songs ({{ songService.albumSongs().length }})
                 </button>
                 <button
                   (click)="activeTab.set('members')"
-                  [class]="activeTab() === 'members' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                  [class]="activeTab() === 'members' ? 'tab-active' : 'tab-inactive'"
                   class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors"
                 >
                   Members ({{ getTotalMemberCount() }})
@@ -133,10 +135,17 @@ import { Component, OnInit, inject, signal, effect, HostListener } from '@angula
                 @if (isUserAdmin()) {
                   <button
                     (click)="activeTab.set('invites')"
-                    [class]="activeTab() === 'invites' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    [class]="activeTab() === 'invites' ? 'tab-active' : 'tab-inactive'"
                     class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors"
                   >
                     Pending Invites ({{ pendingInvites().length }})
+                  </button>
+                  <button
+                    (click)="activeTab.set('theme')"
+                    [class]="activeTab() === 'theme' ? 'tab-active' : 'tab-inactive'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors"
+                  >
+                    Theme
                   </button>
                 }
               </nav>
@@ -556,6 +565,15 @@ import { Component, OnInit, inject, signal, effect, HostListener } from '@angula
                   }
                 </div>
               }
+
+              <!-- Theme Tab -->
+              @if (activeTab() === 'theme') {
+                <app-theme-selector
+                  [albumId]="album()!.id"
+                  [currentTheme]="album()!.theme"
+                  (themeChanged)="onThemeChanged($event)"
+                ></app-theme-selector>
+              }
             </div>
           </div>
         </div>
@@ -742,13 +760,14 @@ import { Component, OnInit, inject, signal, effect, HostListener } from '@angula
     }
   `
 })
-export class AlbumDetailComponent implements OnInit {
+export class AlbumDetailComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   protected albumService = inject(AlbumService);
   private authService = inject(AuthService);
   protected invitationService = inject(InvitationService);
   protected songService = inject(SongService);
+  private themeService = inject(ThemeService);
 
   album = this.albumService.selectedAlbum;
   photos = this.albumService.albumPhotos;
@@ -758,7 +777,7 @@ export class AlbumDetailComponent implements OnInit {
   showAlbumMenu = signal(false);
   uploaderNames = signal<Map<string, string>>(new Map()); // Cache for uploader names
   pendingInvites = signal<AlbumInvitation[]>([]);
-  activeTab = signal<'photos' | 'members' | 'invites' | 'songs'>('photos'); // Add songs tab
+  activeTab = signal<'photos' | 'members' | 'invites' | 'songs' | 'theme'>('photos');
   failedPhotoUrls = signal<Set<string>>(new Set());
   isPhotoEditorOpen = signal(false); // Photo editor state
   
@@ -786,6 +805,16 @@ export class AlbumDetailComponent implements OnInit {
       this.loadPendingInvites(albumId);
       this.songService.loadAlbumSongs(albumId);
     }
+    
+    // Apply album theme when album loads
+    effect(() => {
+      this.applyAlbumTheme();
+    }, { allowSignalWrites: true });
+  }
+
+  ngOnDestroy() {
+    // Clean up theme when leaving the component
+    this.themeService.removeThemeFromDocument();
   }
 
   onMembersChanged() {
@@ -1250,6 +1279,38 @@ export class AlbumDetailComponent implements OnInit {
       if (!success) {
         alert('Failed to delete song. Please try again.');
       }
+    }
+  }
+
+  // Theme methods
+  private applyAlbumTheme() {
+    const album = this.album();
+    if (album?.theme) {
+      console.log('🎨 Applying album theme:', album.theme);
+      this.themeService.setCurrentTheme(album.theme);
+    } else {
+      console.log('🎨 No theme found, removing any existing theme');
+      this.themeService.removeThemeFromDocument();
+    }
+  }
+
+  onThemeChanged(theme: AlbumTheme) {
+    console.log('🎨 Theme changed:', theme);
+    
+    // Apply theme to the current page immediately
+    this.themeService.setCurrentTheme(theme);
+    
+    // Save theme to Firebase
+    const album = this.album();
+    if (album) {
+      this.albumService.updateAlbumTheme(album.id, theme).then(success => {
+        if (success) {
+          console.log('✅ Theme saved to Firebase');
+          // The local state is already updated by the albumService.updateAlbumTheme method
+        } else {
+          console.error('❌ Failed to save theme to Firebase');
+        }
+      });
     }
   }
 }

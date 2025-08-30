@@ -1,0 +1,132 @@
+/* Theme Variables Support */
+:root {
+  /* Default theme variables - can be overridden by ThemeService */
+  --album-primary: #2563eb;
+  --album-secondary: #1e40af;
+  --album-accent: #3b82f6;
+  --album-background: #f8fafc;
+  --album-text: #1e293b;
+  --album-card-bg: #ffffff;
+}
+
+/* Album theme classes that use the CSS variables */
+.album-themed {
+  color: var(--album-text) !important;
+  background-color: var(--album-background) !important;
+  min-height: 100vh;
+}
+
+.album-themed .album-primary-bg {
+  background-color: var(--album-primary);
+}
+
+.album-themed .album-secondary-bg {
+  background-color: var(--album-secondary);
+}
+
+.album-themed .album-accent-bg {
+  background-color: var(--album-accent);
+}
+
+.album-themed .album-card-bg {
+  background-color: var(--album-card-bg);
+}
+
+.album-themed .album-primary-text {
+  color: var(--album-primary);
+}
+
+.album-themed .album-secondary-text {
+  color: var(--album-secondary);
+}
+
+.album-themed .album-accent-text {
+  color: var(--album-accent);
+}
+
+.album-themed .album-text {
+  color: var(--album-text) !important;
+}
+
+.album-themed .album-primary-border {
+  border-color: var(--album-primary);
+}
+
+.album-themed .album-secondary-border {
+  border-color: var(--album-secondary);
+}
+
+.album-themed .album-accent-border {
+  border-color: var(--album-accent);
+}
+
+/* Hover states */
+.album-themed .album-primary-hover:hover {
+  background-color: var(--album-secondary);
+}
+
+.album-themed .album-accent-hover:hover {
+  background-color: var(--album-accent);
+}
+
+/* Button styles with theme support */
+.album-themed .btn-primary {
+  background-color: var(--album-primary) !important;
+  border-color: var(--album-primary) !important;
+  color: white !important;
+}
+
+.album-themed .btn-primary:hover {
+  background-color: var(--album-secondary) !important;
+  border-color: var(--album-secondary) !important;
+}
+
+.album-themed .btn-secondary {
+  background-color: transparent !important;
+  border-color: var(--album-primary) !important;
+  color: var(--album-primary) !important;
+}
+
+.album-themed .btn-secondary:hover {
+  background-color: var(--album-primary) !important;
+  color: white !important;
+}
+
+/* Card styles with theme support */
+.album-themed .themed-card {
+  background-color: var(--album-card-bg) !important;
+  border-color: var(--album-accent) !important;
+}
+
+/* Smooth transitions for theme changes */
+.album-themed,
+.album-themed * {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Special theme-aware components */
+.album-themed .photo-grid {
+  background-color: var(--album-background);
+}
+
+.album-themed .photo-item {
+  background-color: var(--album-card-bg);
+  border-color: var(--album-accent);
+}
+
+.album-themed .tab-active {
+  border-color: var(--album-primary);
+  color: var(--album-primary);
+}
+
+.album-themed .tab-inactive {
+  border-color: transparent;
+  color: var(--album-text);
+  opacity: 0.7;
+}
+
+.album-themed .tab-inactive:hover {
+  color: var(--album-primary);
+  border-color: var(--album-accent);
+  opacity: 1;
+}

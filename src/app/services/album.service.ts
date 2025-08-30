@@ -23,7 +23,7 @@ import {
   deleteObject,
   listAll
 } from '@angular/fire/storage';
-import { Album, Photo, CreateAlbumData, AlbumMember } from '../models/interfaces';
+import { Album, Photo, CreateAlbumData, AlbumMember, AlbumTheme } from '../models/interfaces';
 import { AuthService } from './auth.service';
 
 @Injectable({
@@ -512,6 +512,85 @@ export class AlbumService {
       return true;
     } catch (error) {
       console.error('Bulk download error:', error);
+      return false;
+    }
+  }
+
+  // Theme management methods
+  async updateAlbumTheme(albumId: string, theme: AlbumTheme): Promise<boolean> {
+    try {
+      const currentUser = this.authService.currentUser();
+      if (!currentUser) {
+        console.error('❌ No authenticated user');
+        return false;
+      }
+
+      // Check if user is admin of the album
+      const isAdmin = await this.isUserAlbumAdmin(albumId, currentUser.uid);
+      if (!isAdmin) {
+        console.error('❌ User is not admin of this album');
+        return false;
+      }
+
+      const albumRef = doc(this.firestore, 'albums', albumId);
+      await updateDoc(albumRef, {
+        theme: theme,
+        updatedAt: Timestamp.now()
+      });
+
+      console.log('✅ Album theme updated successfully');
+
+      // Update local state if this is the selected album
+      const selectedAlbum = this.selectedAlbum();
+      if (selectedAlbum && selectedAlbum.id === albumId) {
+        this.selectedAlbum.set({
+          ...selectedAlbum,
+          theme: theme
+        });
+      }
+
+      return true;
+    } catch (error) {
+      console.error('❌ Error updating album theme:', error);
+      return false;
+    }
+  }
+
+  async removeAlbumTheme(albumId: string): Promise<boolean> {
+    try {
+      const currentUser = this.authService.currentUser();
+      if (!currentUser) {
+        console.error('❌ No authenticated user');
+        return false;
+      }
+
+      // Check if user is admin of the album
+      const isAdmin = await this.isUserAlbumAdmin(albumId, currentUser.uid);
+      if (!isAdmin) {
+        console.error('❌ User is not admin of this album');
+        return false;
+      }
+
+      const albumRef = doc(this.firestore, 'albums', albumId);
+      await updateDoc(albumRef, {
+        theme: null,
+        updatedAt: Timestamp.now()
+      });
+
+      console.log('✅ Album theme removed successfully');
+
+      // Update local state if this is the selected album
+      const selectedAlbum = this.selectedAlbum();
+      if (selectedAlbum && selectedAlbum.id === albumId) {
+        this.selectedAlbum.set({
+          ...selectedAlbum,
+          theme: undefined
+        });
+      }
+
+      return true;
+    } catch (error) {
+      console.error('❌ Error removing album theme:', error);
       return false;
     }
   }
